@@ -3,11 +3,13 @@
 #----------------------------------------------------------------
 
 resource "aws_security_group" "openvpn" {
-  name   = "${var.name}"
-  vpc_id = "${var.vpc_id}"
+  name        = "${var.name}"
+  vpc_id      = "${var.vpc_id}"
   description = "OpenVPN security group"
 
-  tags { Name = "${var.name}" }
+  tags {
+    Name = "${var.name}"
+  }
 
   ingress {
     protocol    = -1
@@ -24,21 +26,18 @@ resource "aws_security_group" "openvpn" {
     to_port     = 22
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     protocol    = "tcp"
     from_port   = 443
     to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     protocol    = "udp"
     from_port   = 1194
     to_port     = 1194
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   egress {
     protocol    = -1
     from_port   = 0
@@ -55,7 +54,9 @@ resource "aws_instance" "openvpn" {
 
   vpc_security_group_ids = ["${aws_security_group.openvpn.id}"]
 
-  tags { Name = "${var.name}" }
+  tags {
+    Name = "${var.name}"
+  }
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
   # https://docs.openvpn.net/how-to-tutorialsguides/virtual-platforms/amazon-ec2-appliance-ami-quick-start-guide/
@@ -66,17 +67,21 @@ USERDATA
 
   provisioner "remote-exec" {
     connection {
-      user         = "${var.openvpn_user}"
-      host         = "${self.public_ip}"
-      private_key  = "${var.private_key}"
-      timeout      = "10m"
+      user        = "${var.openvpn_user}"
+      host        = "${self.public_ip}"
+      private_key = "${var.private_key}"
+      timeout     = "10m"
     }
+
     inline = [
       # Sleep 60 seconds until AMI is ready
       "sleep 60",
+
       # Set VPN network info
       "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v ${element(split("/", var.vpn_cidr), 0)} ConfigPut",
+
       "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v ${element(split("/", var.vpn_cidr), 1)} ConfigPut",
+
       # Do a warm restart so the config is picked up
       "sudo /usr/local/openvpn_as/scripts/sacli start",
     ]
@@ -84,9 +89,9 @@ USERDATA
 }
 
 resource "aws_elb" "openvpn" {
-  name               = "openvpn-elb"
-  subnets            = ["${var.public_subnet_ids}"]
-  internal           = false
+  name                        = "openvpn-elb"
+  subnets                     = ["${var.public_subnet_ids}"]
+  internal                    = false
   idle_timeout                = 30
   connection_draining         = true
   connection_draining_timeout = 30
@@ -116,8 +121,9 @@ resource "aws_elb" "openvpn" {
 
 resource "aws_route53_record" "openvpn-web" {
   zone_id = "${var.route_zone_id}"
-  name    = "vpn-web.${var.sub_domain}"
+  name    = "vpn-web.${var.domain_name}"
   type    = "A"
+
   alias {
     name                   = "${aws_elb.openvpn.dns_name}"
     zone_id                = "${aws_elb.openvpn.zone_id}"
@@ -127,7 +133,7 @@ resource "aws_route53_record" "openvpn-web" {
 
 resource "aws_route53_record" "openvpn" {
   zone_id = "${var.route_zone_id}"
-  name    = "vpn.${var.sub_domain}"
+  name    = "vpn.${var.domain_name}"
   type    = "A"
   ttl     = 300
   records = ["${aws_instance.openvpn.public_ip}"]
