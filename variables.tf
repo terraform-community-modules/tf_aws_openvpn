@@ -5,6 +5,10 @@ variable "name" {
 variable "vpc_id" {}
 variable "vpc_cidr" {}
 
+variable "remote_vpn_ip_cidr" {
+  default = "0.0.0.0/0"
+}
+
 variable "public_subnet_ids" {
   type = "list"
 }

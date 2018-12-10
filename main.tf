@@ -3,9 +3,6 @@
 #----------------------------------------------------------------
 
 # You should define this variable as your remote static ip adress to limit vpn exposure to the public internet
-variable "remote_vpn_ip_cidr" {
-  default = "0.0.0.0/0"
-}
 
 resource "aws_security_group" "openvpn" {
   name        = "${var.name}"
