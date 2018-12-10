@@ -2,6 +2,11 @@
 # This module creates all resources necessary for OpenVPN in AWS
 #----------------------------------------------------------------
 
+# You should define this variable as your remote static ip adress to limit vpn exposure to the public internet
+variable "remote_vpn_ip_cidr" {
+  default = "0.0.0.0/0"
+}
+
 resource "aws_security_group" "openvpn" {
   name        = "${var.name}"
   vpc_id      = "${var.vpc_id}"
@@ -24,25 +29,25 @@ resource "aws_security_group" "openvpn" {
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
   }
   ingress {
     protocol    = "tcp"
     from_port   = 443
     to_port     = 443
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
   }
   ingress {
     protocol    = "udp"
     from_port   = 1194
     to_port     = 1194
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
   }
   egress {
     protocol    = -1
     from_port   = 0
     to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
   }
 }
 
