@@ -40,6 +40,12 @@ resource "aws_security_group" "openvpn" {
     to_port     = 1194
     cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
   }
+  ingress {
+    protocol    = "icmp"
+    from_port   = 8
+    to_port     = 0
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
+  }
   egress {
     protocol    = -1
     from_port   = 0
