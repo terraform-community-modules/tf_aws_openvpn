@@ -18,6 +18,7 @@ resource "aws_security_group" "openvpn" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["${var.vpc_cidr}"]
+    description = "all incoming traffic from vpc"
   }
 
   # For OpenVPN Client Web Server & Admin Web UI
