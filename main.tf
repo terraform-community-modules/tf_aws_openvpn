@@ -64,6 +64,13 @@ resource "aws_security_group" "openvpn" {
     cidr_blocks = ["${var.vpc_cidr}"]
     description = "all outgoing traffic to vpc"
   }
+  egress {
+    protocol    = -1
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "all outgoing traffic to anywhere"
+  }
 }
 
 resource "aws_instance" "openvpn" {
