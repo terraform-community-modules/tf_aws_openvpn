@@ -73,6 +73,15 @@ resource "aws_security_group" "openvpn" {
   }
 }
 
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = "${aws_instance.openvpn.id}"
+  allocation_id = "${aws_eip.openvpnip.id}"
+}
+
+resource "aws_eip" "openvpnip" {
+  vpc = true
+}
+
 resource "aws_instance" "openvpn" {
   ami           = "${var.ami}"
   instance_type = "${var.instance_type}"
