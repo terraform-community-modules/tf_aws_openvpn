@@ -10,7 +10,7 @@ variable "remote_vpn_ip_cidr" {
 }
 
 variable "public_subnet_ids" {
-  type = "list"
+  default = []
 }
 
 variable "cert_arn" {}
