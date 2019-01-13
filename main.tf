@@ -73,16 +73,13 @@ resource "aws_security_group" "openvpn" {
   }
 }
 
-resource "aws_eip_association" "eip_assoc" {
-  instance_id   = "${aws_instance.openvpn.id}"
-  allocation_id = "${aws_eip.openvpnip.id}"
-}
-
-resource "aws_eip" "openvpnip" {
-  vpc = true
-}
+# resource "aws_eip_association" "eip_assoc" {
+#   instance_id   = "${aws_instance.openvpn.id}"
+#   allocation_id = "${aws_eip.openvpnip.id}"
+# }
 
 resource "aws_instance" "openvpn" {
+  #depends_on    = ["aws_eip.openvpnip"]
   ami           = "${var.ami}"
   instance_type = "${var.instance_type}"
   key_name      = "${var.key_name}"
@@ -100,11 +97,18 @@ resource "aws_instance" "openvpn" {
 admin_user=${var.openvpn_admin_user}
 admin_pw=${var.openvpn_admin_pw}
 USERDATA
+}
+
+#configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
+#it must resid in the aws_eip resource to be able to establish a connection
+resource "aws_eip" "openvpnip" {
+  vpc      = true
+  instance = "${aws_instance.openvpn.id}"
 
   provisioner "remote-exec" {
     connection {
       user        = "${var.openvpn_user}"
-      host        = "${self.public_ip}"
+      host        = "${aws_eip.openvpnip.public_ip}"
       private_key = "${var.private_key}"
       timeout     = "10m"
     }
@@ -172,5 +176,5 @@ resource "aws_route53_record" "openvpn" {
   name    = "vpn.${var.domain_name}"
   type    = "A"
   ttl     = 300
-  records = ["${aws_instance.openvpn.public_ip}"]
+  records = ["${aws_eip.openvpnip.public_ip}"]
 }

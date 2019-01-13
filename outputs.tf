@@ -3,7 +3,7 @@ output "private_ip" {
 }
 
 output "public_ip" {
-  value = "${aws_instance.openvpn.public_ip}"
+  value = "${aws_eip.openvpnip.public_ip}"
 }
 
 output "public_web_fqdn" {
