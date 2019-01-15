@@ -24,3 +24,7 @@ variable "openvpn_admin_pw" {}
 variable "vpn_cidr" {}
 variable "domain_name" {}
 variable "route_zone_id" {}
+
+variable "sleep" {
+  default = false
+}

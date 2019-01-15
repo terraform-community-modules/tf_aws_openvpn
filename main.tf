@@ -99,6 +99,14 @@ admin_pw=${var.openvpn_admin_pw}
 USERDATA
 }
 
+resource "null_resource" shutdownvpn {
+  count = "${var.sleep ? 1 : 0}"
+
+  provisioner "local-exec" {
+    command = "aws ec2 stop-instances --instance-ids ${aws_instance.openvpn.id}"
+  }
+}
+
 #configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
 #it must resid in the aws_eip resource to be able to establish a connection
 resource "aws_eip" "openvpnip" {
