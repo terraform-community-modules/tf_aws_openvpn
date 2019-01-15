@@ -124,6 +124,9 @@ resource "aws_eip" "openvpnip" {
 
       "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v ${element(split("/", var.vpn_cidr), 1)} ConfigPut",
 
+      # here we enable tls which is required if we are to generate ta.key and client.ovpn files
+      "sudo /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value ='true' ConfigPut",
+
       # Do a warm restart so the config is picked up
       "sudo /usr/local/openvpn_as/scripts/sacli start",
     ]
