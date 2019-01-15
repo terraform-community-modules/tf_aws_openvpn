@@ -73,13 +73,7 @@ resource "aws_security_group" "openvpn" {
   }
 }
 
-# resource "aws_eip_association" "eip_assoc" {
-#   instance_id   = "${aws_instance.openvpn.id}"
-#   allocation_id = "${aws_eip.openvpnip.id}"
-# }
-
 resource "aws_instance" "openvpn" {
-  #depends_on    = ["aws_eip.openvpnip"]
   ami           = "${var.ami}"
   instance_type = "${var.instance_type}"
   key_name      = "${var.key_name}"
@@ -108,7 +102,7 @@ resource "null_resource" shutdownvpn {
 }
 
 #configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
-#it must resid in the aws_eip resource to be able to establish a connection
+#it must reside in the aws_eip resource to be able to establish a connection
 resource "aws_eip" "openvpnip" {
   vpc      = true
   instance = "${aws_instance.openvpn.id}"
