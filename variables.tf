@@ -16,6 +16,8 @@ variable "public_subnet_ids" {
 variable "cert_arn" {}
 variable "key_name" {}
 variable "private_key" {}
+
+variable "local_key_path" {}
 variable "ami" {}
 variable "instance_type" {}
 variable "openvpn_user" {}

@@ -116,6 +116,9 @@ resource "aws_eip" "openvpnip" {
     }
 
     inline = [
+      #allow echo of input in bash.  Won't display pipes though!
+      "set -x",
+
       # Sleep 60 seconds until AMI is ready
       "sleep 60",
 
@@ -131,6 +134,67 @@ resource "aws_eip" "openvpnip" {
       "sudo /usr/local/openvpn_as/scripts/sacli start",
     ]
   }
+
+  provisioner "remote-exec" {
+    connection {
+      user        = "${var.openvpn_user}"
+      host        = "${aws_eip.openvpnip.public_ip}"
+      private_key = "${var.private_key}"
+      timeout     = "10m"
+    }
+
+    inline = [
+      "cd /usr/local/openvpn_as/scripts/",
+
+      # todo : need to correct this test user to be dynamic based on user input.
+      "echo ${var.openvpn_admin_pw} | sudo -S mkdir seperate",
+
+      "set -x",
+
+      # this enables auto login: todo check if theres a problem with not having this abbove the start command
+      "sudo ./sacli --user openvpnas --key 'prop_autologin' --value 'true' UserPropPut",
+
+      "sudo ./sacli --user openvpnas AutoGenerateOnBehalfOf",
+      "sudo ./sacli -o ./seperate --cn openvpnas get5",
+      "sudo chown openvpnas seperate/*",
+      "ls -la seperate",
+    ]
+
+    #allow echo of input in bash.  Won't display pipes though!
+
+    #auto generate script needs a root shell.
+    #"sudo -i",
+
+    #allow echo of input in bash.  Won't display pipes though!
+    #"set -x",
+  }
+
+  #we download the connection config files, and alter the client.ovpn file to use a password file.
+  ### note user must follow instructions for startvpn.sh to function
+  provisioner "local-exec" {
+    command = <<EOT
+      set -x
+      mkdir ~/openvpn_config
+      cd ~/openvpn_config
+      rm -f ta.key
+      rm -f client.ovpn
+      rm -f client.key
+      rm -f client.crt
+      rm -f ca.crt
+      rm -f yourserver.txt
+      scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' openvpnas@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
+      ls -la
+      echo 'openvpnas' >> yourserver.txt
+      echo 'SecurityThroughObscurity99' >> yourserver.txt
+      sed -i 's/auth-user-pass/auth-user-pass yourserver.txt/g' client.ovpn
+      ~/openvpn_config/startvpn.sh &
+  EOT
+  }
+
+  # todo need to document for users how to create start vpn script and add to sudoers.
+
+  #need to work out a way of starting openvpn with sudo
+  ##sudo /usr/local/sbin/openvpn --config ./client.ovpn
 }
 
 resource "aws_elb" "openvpn" {
