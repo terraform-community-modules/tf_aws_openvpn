@@ -151,7 +151,7 @@ resource "aws_eip" "openvpnip" {
 
       "set -x",
 
-      # this enables auto login: todo check if theres a problem with not having this abbove the start command
+      # this enables auto login: todo : check if theres a problem with not having this above the start command
       "sudo ./sacli --user openvpnas --key 'prop_autologin' --value 'true' UserPropPut",
 
       "sudo ./sacli --user openvpnas AutoGenerateOnBehalfOf",
@@ -159,14 +159,6 @@ resource "aws_eip" "openvpnip" {
       "sudo chown openvpnas seperate/*",
       "ls -la seperate",
     ]
-
-    #allow echo of input in bash.  Won't display pipes though!
-
-    #auto generate script needs a root shell.
-    #"sudo -i",
-
-    #allow echo of input in bash.  Won't display pipes though!
-    #"set -x",
   }
 
   #we download the connection config files, and alter the client.ovpn file to use a password file.
@@ -178,6 +170,7 @@ resource "aws_eip" "openvpnip" {
       cd ~/openvpn_config
       rm -f ta.key
       rm -f client.ovpn
+      rm -f client.conf
       rm -f client.key
       rm -f client.crt
       rm -f ca.crt
@@ -187,14 +180,15 @@ resource "aws_eip" "openvpnip" {
       echo 'openvpnas' >> yourserver.txt
       echo 'SecurityThroughObscurity99' >> yourserver.txt
       sed -i 's/auth-user-pass/auth-user-pass yourserver.txt/g' client.ovpn
-      ~/openvpn_config/startvpn.sh &
+      mv client.ovpn openvpn.conf
+      ~/openvpn_config/startvpn.sh
+      ping -c15 '${aws_instance.openvpn.private_ip}'
   EOT
   }
 
-  # todo need to document for users how to create start vpn script and add to sudoers.
-
-  #need to work out a way of starting openvpn with sudo
-  ##sudo /usr/local/sbin/openvpn --config ./client.ovpn
+  # You can check /var/log/syslog to confirm connection
+  # todo : need to document for users how to create start vpn script and add to sudoers.  script should exist in /etc/openvpn.
+  # the visudo permissions should be more specific, dont * copy to folder in this script.
 }
 
 resource "aws_elb" "openvpn" {
