@@ -181,14 +181,27 @@ resource "aws_eip" "openvpnip" {
       echo 'SecurityThroughObscurity99' >> yourserver.txt
       sed -i 's/auth-user-pass/auth-user-pass yourserver.txt/g' client.ovpn
       mv client.ovpn openvpn.conf
-      ~/openvpn_config/startvpn.sh
-      ping -c15 '${aws_instance.openvpn.private_ip}'
   EOT
   }
 
   # You can check /var/log/syslog to confirm connection
   # todo : need to document for users how to create start vpn script and add to sudoers.  script should exist in /etc/openvpn.
   # the visudo permissions should be more specific, dont * copy to folder in this script.
+}
+
+variable "start_vpn" {
+  default = true
+}
+
+resource "null_resource" "start_vpn" {
+  count = "${var.start_vpn}"
+
+  provisioner "local-exec" {
+    command = <<EOT
+      ~/openvpn_config/startvpn.sh
+      ping -c15 '${aws_instance.openvpn.private_ip}'
+  EOT
+  }
 }
 
 resource "aws_elb" "openvpn" {
