@@ -185,7 +185,8 @@ resource "aws_eip" "openvpnip" {
       echo 'openvpnas' >> yourserver.txt
       echo 'SecurityThroughObscurity99' >> yourserver.txt
       sed -i 's/auth-user-pass/auth-user-pass yourserver.txt/g' client.ovpn
-      mv client.ovpn openvpn.conf
+      sudo sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=openvpnas@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
+      mv client.ovpn client_route.conf
   EOT
   }
 
