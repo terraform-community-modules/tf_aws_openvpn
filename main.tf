@@ -180,13 +180,14 @@ resource "aws_eip" "openvpnip" {
       rm -f client.crt
       rm -f ca.crt
       rm -f yourserver.txt
+      rm -f client_route.conf
       scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' openvpnas@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
       ls -la
       echo 'openvpnas' >> yourserver.txt
       echo 'SecurityThroughObscurity99' >> yourserver.txt
       sed -i 's/auth-user-pass/auth-user-pass yourserver.txt/g' client.ovpn
-      sudo sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=openvpnas@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
-      mv client.ovpn client_route.conf
+      sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=openvpnas@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
+      mv client.ovpn openvpn.conf
   EOT
   }
 
