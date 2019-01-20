@@ -167,7 +167,8 @@ resource "aws_eip" "openvpnip" {
   }
 
   #we download the connection config files, and alter the client.ovpn file to use a password file.
-  ### note user must follow instructions for startvpn.sh to function
+  ### note user must follow instructions on startvpn.sh to function
+  ### todo : would be better to avoid all file movement in local exec.  startvpn should only start the service and nothing else.
   provisioner "local-exec" {
     command = <<EOT
       set -x
@@ -192,8 +193,12 @@ resource "aws_eip" "openvpnip" {
   }
 
   # You can check /var/log/syslog to confirm connection
+  # check autoload is set to all or openvpn in /etc/default 
   # todo : need to document for users how to create start vpn script and add to sudoers.  script should exist in /etc/openvpn.
   # the visudo permissions should be more specific, dont * copy to folder in this script.
+
+  #read more here to learn about setting up routes
+  # https://askubuntu.com/questions/612840/adding-route-on-client-using-openvpn
 }
 
 variable "start_vpn" {
@@ -201,11 +206,13 @@ variable "start_vpn" {
 }
 
 resource "null_resource" "start_vpn" {
-  count = "${var.start_vpn}"
+  depends_on = ["aws_eip.openvpnip"]
+  count      = "${var.start_vpn}"
 
   provisioner "local-exec" {
     command = <<EOT
       ~/openvpn_config/startvpn.sh
+      sleep 10
       ping -c15 '${aws_instance.openvpn.private_ip}'
   EOT
   }
