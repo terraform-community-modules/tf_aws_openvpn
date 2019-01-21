@@ -211,6 +211,9 @@ resource "aws_eip" "openvpnip" {
   # sudo ip route add 10.0.0.0/16 via 192.169.0.2
   # ifconfig eth1 up
   # ifconfig eth1 promisc
+  # in ubuntu vm, ip forwarding must be on
+  # http://www.networkinghowtos.com/howto/enable-ip-forwarding-on-ubuntu-13-04/
+  # sudo sysctl net.ipv4.ip_forward=1 
 }
 
 variable "start_vpn" {
