@@ -197,8 +197,20 @@ resource "aws_eip" "openvpnip" {
   # todo : need to document for users how to create start vpn script and add to sudoers.  script should exist in /etc/openvpn.
   # the visudo permissions should be more specific, dont * copy to folder in this script.
 
-  #read more here to learn about setting up routes
+  # read more here to learn about setting up routes
+  # https://openvpn.net/vpn-server-resources/site-to-site-routing-explained-in-detail/
   # https://askubuntu.com/questions/612840/adding-route-on-client-using-openvpn
+
+  # you will need ip forwarding on client and server if routing both sides -
+  # https://community.openvpn.net/openvpn/wiki/265-how-do-i-enable-ip-forwarding
+  # and promiscuous mode enabled on ethernet adapters.  for example, if openvpn client is in ubuntu vm,
+  # and we are running the vm with bridge ethernet in a rhel host, then enabling promiscuous mode, and setting up a static route
+  # is needed.
+  # https://askubuntu.com/questions/430355/configure-a-network-interface-into-promiscuous-mode
+  # run this in the rhel host to provide static route to the virtual adaptor inside the vm
+  # sudo ip route add 10.0.0.0/16 via 192.169.0.2
+  # ifconfig eth1 up
+  # ifconfig eth1 promisc
 }
 
 variable "start_vpn" {
