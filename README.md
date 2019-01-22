@@ -65,35 +65,35 @@ module "openvpn" {
 
 You can check /var/log/syslog to confirm vpn connection.
 check autoload is set to all or openvpn in /etc/default
-ensure startvpn.sh is in ~/openvpn_config.  openvpn.conf auto login files are constructed here and placed in /etc/openvpn before execution.
-
-read more here to learn about setting up routes
+ensure startvpn.sh is in ~/openvpn_config.  openvpn.conf auto login files are constructed here and placed in /etc/openvpn before execution.  
+  
+read more here to learn about setting up routes  
 https://openvpn.net/vpn-server-resources/site-to-site-routing-explained-in-detail/  
 https://askubuntu.com/questions/612840/adding-route-on-client-using-openvpn  
 
 You will need ip forwarding on client and server if routing both sides.  
 https://community.openvpn.net/openvpn/wiki/265-how-do-i-enable-ip-forwarding  
 These are the manual steps I'm doing to get both private subnets to connect, and I'd love to figure out the equivalent commands that I can drop in when I'm provisioning the access server to automate them, but for now these are manual steps.
+  
+1.0 Should VPN clients have access to private subnets  
+(non-public networks on the server side)?  
+Yes, enable routing  
+  
+2.0 Specify the private subnets to which all clients should be given access (one per line):  
+10.0.101.0/24  
+10.0.1.0/24  
+(these subnets are in aws, the open vpn access server resides in the 10.0.101.0/24 subnet)  
 
-[b]1.0 Should VPN clients have access to private subnets
-(non-public networks on the server side)?[/b]
-Yes, enable routing
-
-[b]2.0 Specify the private subnets to which all clients should be given access (one per line):[/b]
-10.0.101.0/24
-10.0.1.0/24
-(these subnets are in aws, the open vpn access server resides in the 10.0.101.0/24 subnet)
-
-[b]3.0 Allow access from these private subnets to all VPN client IP addresses and subnets[/b] : on
-
-[b]4.0 in user permissions / user
-configure vpn gateway:
-[/b]yes
-
-[b]5.0 Allow client to act as VPN gateway
-for these client-side subnets:[/b]
-192.168.0.0/24
-
+3.0 Allow access from these private subnets to all VPN client IP addresses and subnets : on  
+  
+4.0 in user permissions / user  
+configure vpn gateway:  
+yes  
+  
+5.0 Allow client to act as VPN gateway  
+for these client-side subnets:  
+192.168.0.0/24  
+  
 if you intend to provide access to other systems on your local network, promiscuous mode must enabled on host ethernet adapters.  for example, if openvpn client is in ubuntu vm, and we are running the vm with bridged ethernet in a linux host, then enabling promiscuous mode, and setting up a static route is needed in the host.  
 https://askubuntu.com/questions/430355/configure-a-network-interface-into-promiscuous-mode  
 for example, if you use a rhel host run this in the host to provide static route to the adaptor inside the vm (should be on the same subnet)
