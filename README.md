@@ -101,13 +101,17 @@ for example, if you use a rhel host run this in the host to provide static route
 sudo ip route add 10.0.0.0/16 via [ip adress of the bridged ethernet adaptor in the vm]
 ```
 check routes with:
-   sudo route -n
-  ifconfig eth1 up
-  ifconfig eth1 promisc
+```
+sudo route -n
+ifconfig eth1 up
+ifconfig eth1 promisc
+```
 
 In the ubuntu vm where where terraform is running, ip forwarding must be on.  You must be using a bridged adaptor.
 http://www.networkinghowtos.com/howto/enable-ip-forwarding-on-ubuntu-13-04/
-  sudo sysctl net.ipv4.ip_forward=1
+```
+sudo sysctl net.ipv4.ip_forward=1
+```
 
 
 ## Authors
