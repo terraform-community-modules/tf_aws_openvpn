@@ -201,19 +201,42 @@ resource "aws_eip" "openvpnip" {
   # https://openvpn.net/vpn-server-resources/site-to-site-routing-explained-in-detail/
   # https://askubuntu.com/questions/612840/adding-route-on-client-using-openvpn
 
-  # you will need ip forwarding on client and server if routing both sides -
+  # you will need ip forwarding on client and server if routing both sides.
   # https://community.openvpn.net/openvpn/wiki/265-how-do-i-enable-ip-forwarding
+  # These are the manual steps I'm doing to get both private subnets to connect, and I'd love to figure out the equivalent commands that I can drop in when I'm provisioning the access server.
+
+  # [b]1.0 Should VPN clients have access to private subnets
+  # (non-public networks on the server side)?[/b]
+  # Yes, enable routing
+
+  # [b]2.0 Specify the private subnets to which all clients should be given access (one per line):[/b]
+  # 10.0.101.0/24
+  # 10.0.1.0/24
+  # (these subnets are in aws, the open vpn access server resides in the 10.0.101.0/24 subnet)
+
+  # [b]3.0 Allow access from these private subnets to all VPN client IP addresses and subnets[/b] : on
+
+  # [b]4.0 in user permissions / user
+  # configure vpn gateway:
+  # [/b]yes
+
+  # [b]5.0 Allow client to act as VPN gateway
+  # for these client-side subnets:[/b]
+  # 192.169.0.0/24
+
   # and promiscuous mode enabled on ethernet adapters.  for example, if openvpn client is in ubuntu vm,
   # and we are running the vm with bridge ethernet in a rhel host, then enabling promiscuous mode, and setting up a static route
   # is needed.
   # https://askubuntu.com/questions/430355/configure-a-network-interface-into-promiscuous-mode
-  # run this in the rhel host to provide static route to the virtual adaptor inside the vm
+  # run this in the rhel host to provide static route to the adaptor inside the vm (should be on the same subnet)
   # sudo ip route add 10.0.0.0/16 via 192.169.0.2
+  # check routes with:
+  # sudo route -n
   # ifconfig eth1 up
   # ifconfig eth1 promisc
-  # in ubuntu vm, ip forwarding must be on
+  # in ubuntu vm, ip forwarding must be on.  you must be using a bridged adaptor.
   # http://www.networkinghowtos.com/howto/enable-ip-forwarding-on-ubuntu-13-04/
-  # sudo sysctl net.ipv4.ip_forward=1 
+  # sudo sysctl net.ipv4.ip_forward=1
 }
 
 variable "start_vpn" {
