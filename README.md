@@ -99,7 +99,7 @@ https://askubuntu.com/questions/430355/configure-a-network-interface-into-promis
 for example, if you use a rhel host run this in the host to provide static route to the adaptor inside the vm (should be on the same subnet)
   sudo ip route add 10.0.0.0/16 via [ip adress of the bridged ethernet adaptor in the vm]
 check routes with:
-  sudo route -n
+   sudo route -n
   ifconfig eth1 up
   ifconfig eth1 promisc
 
