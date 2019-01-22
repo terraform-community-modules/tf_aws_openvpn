@@ -97,7 +97,9 @@ for these client-side subnets:[/b]
 if you intend to provide access to other systems on your local network, promiscuous mode must enabled on host ethernet adapters.  for example, if openvpn client is in ubuntu vm, and we are running the vm with bridged ethernet in a linux host, then enabling promiscuous mode, and setting up a static route is needed in the host.
 https://askubuntu.com/questions/430355/configure-a-network-interface-into-promiscuous-mode
 for example, if you use a rhel host run this in the host to provide static route to the adaptor inside the vm (should be on the same subnet)
-  sudo ip route add 10.0.0.0/16 via [ip adress of the bridged ethernet adaptor in the vm]
+```
+sudo ip route add 10.0.0.0/16 via [ip adress of the bridged ethernet adaptor in the vm]
+```
 check routes with:
    sudo route -n
   ifconfig eth1 up
