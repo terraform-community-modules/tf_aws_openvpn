@@ -98,6 +98,15 @@ admin_pw=${var.openvpn_admin_pw}
 USERDATA
 }
 
+#wakeup a node after sleep
+resource "null_resource" "start-node" {
+  count = "${var.sleep ? 0 : 1}"
+
+  provisioner "local-exec" {
+    command = "aws ec2 start-instances --instance-ids ${aws_instance.openvpn.id}"
+  }
+}
+
 resource "null_resource" shutdownvpn {
   count = "${var.sleep ? 1 : 0}"
 
