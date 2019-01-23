@@ -182,7 +182,7 @@ resource "aws_eip" "openvpnip" {
       rm -f ca.crt
       rm -f yourserver.txt
       rm -f client_route.conf
-      scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' openvpnas@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
+      scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' ${var.openvpn_admin_user}@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
       ls -la
       echo '${var.openvpn_user}' >> yourserver.txt
       echo '${var.openvpn_user_pw}' >> yourserver.txt
