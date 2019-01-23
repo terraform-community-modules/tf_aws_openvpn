@@ -114,7 +114,7 @@ resource "aws_eip" "openvpnip" {
 
   provisioner "remote-exec" {
     connection {
-      user        = "${var.openvpn_user}"
+      user        = "${var.openvpn_admin_user}"
       host        = "${aws_eip.openvpnip.public_ip}"
       private_key = "${var.private_key}"
       timeout     = "10m"
@@ -142,7 +142,7 @@ resource "aws_eip" "openvpnip" {
 
   provisioner "remote-exec" {
     connection {
-      user        = "${var.openvpn_user}"
+      user        = "${var.openvpn_admin_user}"
       host        = "${aws_eip.openvpnip.public_ip}"
       private_key = "${var.private_key}"
       timeout     = "10m"
@@ -151,17 +151,17 @@ resource "aws_eip" "openvpnip" {
     inline = [
       "cd /usr/local/openvpn_as/scripts/",
 
-      # todo : need to correct this test user to be dynamic based on user input.
+      # todo : need to add a user that is different to the admin user.  currently they must be identical.
       "echo ${var.openvpn_admin_pw} | sudo -S mkdir seperate",
 
       "set -x",
 
       # this enables auto login: todo : check if theres a problem with not having this above the start command
-      "sudo ./sacli --user openvpnas --key 'prop_autologin' --value 'true' UserPropPut",
+      "sudo ./sacli --user ${var.openvpn_user} --key 'prop_autologin' --value 'true' UserPropPut",
 
-      "sudo ./sacli --user openvpnas AutoGenerateOnBehalfOf",
-      "sudo ./sacli -o ./seperate --cn openvpnas get5",
-      "sudo chown openvpnas seperate/*",
+      "sudo ./sacli --user ${var.openvpn_user} AutoGenerateOnBehalfOf",
+      "sudo ./sacli -o ./seperate --cn ${var.openvpn_user} get5",
+      "sudo chown ${var.openvpn_user} seperate/*",
       "ls -la seperate",
     ]
   }
@@ -184,10 +184,10 @@ resource "aws_eip" "openvpnip" {
       rm -f client_route.conf
       scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' openvpnas@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
       ls -la
-      echo 'openvpnas' >> yourserver.txt
-      echo 'SecurityThroughObscurity99' >> yourserver.txt
+      echo '${var.openvpn_user}' >> yourserver.txt
+      echo '${var.openvpn_user_pw}' >> yourserver.txt
       sed -i 's/auth-user-pass/auth-user-pass yourserver.txt\npush "redirect-gateway def1 bypass-dhcp"/g' client.ovpn
-      sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=openvpnas@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
+      sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=${var.openvpn_user}@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
       mv client.ovpn openvpn.conf
   EOT
   }

@@ -21,6 +21,7 @@ variable "local_key_path" {}
 variable "ami" {}
 variable "instance_type" {}
 variable "openvpn_user" {}
+variable "openvpn_user_pw" {}
 variable "openvpn_admin_user" {}
 variable "openvpn_admin_pw" {}
 variable "vpn_cidr" {}
