@@ -3,7 +3,7 @@
 #IMPORTANT: you will need to have the permissions locked down tight in this file for this to be secure.
 #Make the file owned by root and group root:
 
-#sudo chown root.root <my script>
+#sudo chown root:root <my script>
 
 #Now set the SetUID bit, make it executable for all and writable only by root:
 

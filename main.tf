@@ -216,7 +216,8 @@ resource "null_resource" "start_vpn" {
 
   provisioner "local-exec" {
     command = <<EOT
-      ~/openvpn_config/startvpn.sh
+      ${path.module}/startvpn.sh
+      #~/openvpn_config/startvpn.sh
       sleep 10
       ping -c15 '${aws_instance.openvpn.private_ip}'
   EOT
