@@ -181,7 +181,7 @@ resource "aws_eip" "openvpnip" {
   provisioner "local-exec" {
     command = <<EOT
       set -x
-      mkdir ~/openvpn_config
+      mkdir -p ~/openvpn_config
       cd ~/openvpn_config
       rm -f ta.key
       rm -f client.ovpn

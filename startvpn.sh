@@ -12,9 +12,15 @@
 
 
 #edit the sudoers file to conatin this line, which will allow the command to be run without a password.
-#user ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa * /etc/openvpn/.
-#user ALL=(ALL:ALL) NOPASSWD:/bin/systemctl daemon-reload
-#user ALL=(ALL:ALL) NOPASSWD:/usr/sbin/service openvpn restart
+#usernamebob ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa * /etc/openvpn/.
+#usernamebob ALL=(ALL:ALL) NOPASSWD:/bin/systemctl daemon-reload
+#usernamebob ALL=(ALL:ALL) NOPASSWD:/usr/sbin/service openvpn restart
+
+#or
+
+#%usergroup ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa * /etc/openvpn/.
+#%usergroup ALL=(ALL:ALL) NOPASSWD:/bin/systemctl daemon-reload
+#%usergroup ALL=(ALL:ALL) NOPASSWD:/usr/sbin/service openvpn restart
 
 
 #Keep in mind if this script will allow any input or editing of files, this will also be done as root.
