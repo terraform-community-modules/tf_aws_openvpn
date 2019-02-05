@@ -80,8 +80,8 @@ These are the manual steps I'm doing to get both private subnets to connect, and
 Yes, enable routing  
   
 2.0 Specify the private subnets to which all clients should be given access (one per line):  
-10.0.101.0/24  
-10.0.1.0/24  
+10.0.101.0/24
+10.0.1.0/24
 (these subnets are in aws, the open vpn access server resides in the 10.0.101.0/24 subnet)  
 
 3.0 Allow access from these private subnets to all VPN client IP addresses and subnets : on  
@@ -90,9 +90,13 @@ Yes, enable routing
 configure vpn gateway:  
 yes  
   
-5.0 Allow client to act as VPN gateway  
+5.0 Allow client to act as VPN gateway (enter the cidr block for your onsite network)
 for these client-side subnets:  
-192.168.0.0/24  
+192.168.92.0/24
+
+At this point, your client side vpn client should be able to ping any private ip, and if you ssh into one of those ips, it whould be able to ping your client side ip with its private ip address.
+
+If not you will have to trouble shoot before you can continue further because this functionality is required.
   
 if you intend to provide access to other systems on your local network, promiscuous mode must enabled on host ethernet adapters.  for example, if openvpn client is in ubuntu vm, and we are running the vm with bridged ethernet in a linux host, then enabling promiscuous mode, and setting up a static route is needed in the host.  
 https://askubuntu.com/questions/430355/configure-a-network-interface-into-promiscuous-mode  

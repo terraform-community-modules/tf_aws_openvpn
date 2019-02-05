@@ -183,14 +183,14 @@ resource "aws_eip" "openvpnip" {
       set -x
       mkdir -p ~/openvpn_config
       cd ~/openvpn_config
-      rm -f ta.key
-      rm -f client.ovpn
-      rm -f client.conf
-      rm -f client.key
-      rm -f client.crt
-      rm -f ca.crt
-      rm -f yourserver.txt
-      rm -f client_route.conf
+      rm -f ~/openvpn_config/ta.key
+      rm -f ~/openvpn_config/client.ovpn
+      rm -f ~/openvpn_config/client.conf
+      rm -f ~/openvpn_config/client.key
+      rm -f ~/openvpn_config/client.crt
+      rm -f ~/openvpn_config/ca.crt
+      rm -f ~/openvpn_config/yourserver.txt
+      rm -f ~/openvpn_config/client_route.conf
       scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' ${var.openvpn_admin_user}@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
       ls -la
       echo '${var.openvpn_user}' >> yourserver.txt
@@ -212,7 +212,12 @@ variable "start_vpn" {
 
 resource "null_resource" "start_vpn" {
   depends_on = ["aws_eip.openvpnip"]
-  count      = "${var.start_vpn}"
+
+  triggers {
+    instanceid = "${ aws_eip.openvpnip.id }"
+  }
+
+  count = "${var.start_vpn}"
 
   provisioner "local-exec" {
     command = <<EOT
