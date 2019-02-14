@@ -2,7 +2,62 @@
 
 Terraform module which creates OpenVPN on AWS
 
-## This module is creating the following resources:
+# Important steps for permissions and startvpn.sh
+
+*IMPORTANT: you will need to have the permissions locked down tight in on startvpn.sh for this to be secure.
+Make the file owned by root and group root:*
+
+    sudo chown root:root startvpn.sh
+
+Now set the SetUID bit, make it executable for all and writable only by root:
+
+    sudo chmod 4755 startvpn.sh
+    sudo chmod +s startvpn.sh
+
+
+edit the sudoers file to conatin this line, which will allow these vpn autologin files to be copied to /etc without a password.
+
+```
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/ca.crt /etc/openvpn/.
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/client.crt /etc/openvpn/.
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/client.key /etc/openvpn/.
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/openvpn.conf /etc/openvpn/.
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/ta.key /etc/openvpn/.
+deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa /home/deadlineuser/openvpn_config/yourserver.txt /etc/openvpn/.
+
+/home/deadlineuser ALL=(ALL:ALL) NOPASSWD:/bin/systemctl daemon-reload
+/home/deadlineuser ALL=(ALL:ALL) NOPASSWD:/usr/sbin/service openvpn restart
+```
+
+instead, you may want to allow a group of users to be able to do this.  
+
+Edit: THIS DIDN'T ACTUALLY WORK BECAUSE WE CANT USE RELATIVE PATHS IN SUDOERS.
+the right way to do it if needed would be to have a non home dir path temp location, with appropraite permissions to read and write by the group on within that path.
+
+```
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/ca.crt /etc/openvpn/.
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/client.crt /etc/openvpn/.
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/client.key /etc/openvpn/.
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/openvpn.conf /etc/openvpn/.
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/ta.key /etc/openvpn/.
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/cp -rfa ~/openvpn_config/yourserver.txt /etc/openvpn/.
+
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/bin/systemctl daemon-reload
+%deadlineanduser ALL=(ALL:ALL) NOPASSWD:/usr/sbin/service openvpn restart
+```
+
+Keep in mind if this script will allow any input or editing of files, this will also be done as root.  some more references on related subjects:
+https://bbs.archlinux.org/viewtopic.php?id=126126
+https://askubuntu.com/questions/229800/how-to-auto-start-openvpn-client-on-ubuntu-cli
+https://serverfault.com/questions/480909/how-can-i-run-openvpn-as-daemon-sending-a-config-file
+
+startvpn.sh is currently how open vpn configuration is handled locally.  the files retrieved from remote access server
+are needed for auto login to work.
+
+It would be better to replace this with an Ansible playbook instead.
+
+
+## the tf_aws_openvpn module is creating the following resources:
 
 1. Two Route53 Records
   a. vpn-web.domain.com
