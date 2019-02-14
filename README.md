@@ -116,7 +116,7 @@ module "openvpn" {
 }
 ```
 
-## Additional Notes for Routing
+## Important Notes for Routing:
 
 You can check /var/log/syslog to confirm vpn connection.
 check autoload is set to all or openvpn in /etc/default
@@ -128,24 +128,25 @@ https://askubuntu.com/questions/612840/adding-route-on-client-using-openvpn
 
 You will need ip forwarding on client and server if routing both sides.  
 https://community.openvpn.net/openvpn/wiki/265-how-do-i-enable-ip-forwarding  
-These are the manual steps I'm doing to get both private subnets to connect, and I'd love to figure out the equivalent commands that I can drop in when I'm provisioning the access server to automate them, but for now these are manual steps.
+
+**These are the manual steps required to get both private subnets to connect, and we'd love to figure out the equivalent commands drop in when I'm provisioning the access server to automate them, but for now these are manual steps.**
   
-1.0 Should VPN clients have access to private subnets  
+- Should VPN clients have access to private subnets  
 (non-public networks on the server side)?  
 Yes, enable routing  
   
-2.0 Specify the private subnets to which all clients should be given access (one per line):  
+- Specify the private subnets to which all clients should be given access (one per line):  
 10.0.101.0/24
 10.0.1.0/24
 (these subnets are in aws, the open vpn access server resides in the 10.0.101.0/24 subnet)  
 
-3.0 Allow access from these private subnets to all VPN client IP addresses and subnets : on  
+- Allow access from these private subnets to all VPN client IP addresses and subnets : on  
   
-4.0 in user permissions / user  
+- in user permissions / user  
 configure vpn gateway:  
 yes  
   
-5.0 Allow client to act as VPN gateway (enter the cidr block for your onsite network)
+- Allow client to act as VPN gateway (enter the cidr block for your onsite network)
 for these client-side subnets:  
 192.168.92.0/24
 
