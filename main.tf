@@ -210,71 +210,71 @@ variable "start_vpn" {
   default = true
 }
 
-resource "null_resource" "start_vpn" {
-  depends_on = ["aws_eip.openvpnip"]
+# resource "null_resource" "start_vpn" {
+#   depends_on = ["aws_eip.openvpnip"]
 
-  triggers {
-    instanceid = "${ aws_eip.openvpnip.id }"
-  }
+#   triggers {
+#     instanceid = "${ aws_eip.openvpnip.id }"
+#   }
 
-  count = "${var.start_vpn}"
+#   count = "${var.start_vpn}"
 
-  provisioner "local-exec" {
-    command = <<EOT
-      ${path.module}/startvpn.sh
-      sleep 10
-      ping -c15 '${aws_instance.openvpn.private_ip}'
-  EOT
-  }
-}
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       ${path.module}/startvpn.sh
+#       sleep 10
+#       ping -c15 '${aws_instance.openvpn.private_ip}'
+#   EOT
+#   }
+# }
 
-resource "aws_elb" "openvpn" {
-  name                        = "openvpn-elb"
-  subnets                     = ["${var.public_subnet_ids}"]
-  internal                    = false
-  idle_timeout                = 30
-  connection_draining         = true
-  connection_draining_timeout = 30
-  instances                   = ["${aws_instance.openvpn.id}"]
-  security_groups             = ["${aws_security_group.openvpn.id}"]
+# resource "aws_elb" "openvpn" {
+#   name                        = "openvpn-elb"
+#   subnets                     = ["${var.public_subnet_ids}"]
+#   internal                    = false
+#   idle_timeout                = 30
+#   connection_draining         = true
+#   connection_draining_timeout = 30
+#   instances                   = ["${aws_instance.openvpn.id}"]
+#   security_groups             = ["${aws_security_group.openvpn.id}"]
 
-  listener {
-    instance_port      = 443
-    instance_protocol  = "https"
-    lb_port            = 443
-    lb_protocol        = "https"
-    ssl_certificate_id = "${var.cert_arn}"
-  }
+#   listener {
+#     instance_port      = 443
+#     instance_protocol  = "https"
+#     lb_port            = 443
+#     lb_protocol        = "https"
+#     ssl_certificate_id = "${var.cert_arn}"
+#   }
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    target              = "TCP:443"
-    interval            = 20
-  }
+#   health_check {
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 2
+#     timeout             = 5
+#     target              = "TCP:443"
+#     interval            = 20
+#   }
 
-  tags {
-    Name = "openvpn-elb"
-  }
-}
+#   tags {
+#     Name = "openvpn-elb"
+#   }
+# }
 
-resource "aws_route53_record" "openvpn-web" {
-  zone_id = "${var.route_zone_id}"
-  name    = "vpn-web.${var.domain_name}"
-  type    = "A"
+# resource "aws_route53_record" "openvpn-web" {
+#   zone_id = "${var.route_zone_id}"
+#   name    = "vpn-web.${var.domain_name}"
+#   type    = "A"
 
-  alias {
-    name                   = "${aws_elb.openvpn.dns_name}"
-    zone_id                = "${aws_elb.openvpn.zone_id}"
-    evaluate_target_health = false
-  }
-}
+#   alias {
+#     name                   = "${aws_elb.openvpn.dns_name}"
+#     zone_id                = "${aws_elb.openvpn.zone_id}"
+#     evaluate_target_health = false
+#   }
+# }
 
-resource "aws_route53_record" "openvpn" {
-  zone_id = "${var.route_zone_id}"
-  name    = "vpn.${var.domain_name}"
-  type    = "A"
-  ttl     = 300
-  records = ["${aws_eip.openvpnip.public_ip}"]
-}
+# resource "aws_route53_record" "openvpn" {
+#   zone_id = "${var.route_zone_id}"
+#   name    = "vpn.${var.domain_name}"
+#   type    = "A"
+#   ttl     = 300
+#   records = ["${aws_eip.openvpnip.public_ip}"]
+# }
