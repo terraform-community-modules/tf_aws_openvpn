@@ -96,7 +96,7 @@ resource "aws_instance" "openvpn" {
   user_data = <<USERDATA
 admin_user=${var.openvpn_admin_user}
 admin_pw=${var.openvpn_admin_pw}
-sudo apt-get install -y python
+sudo apt install -y python
 USERDATA
 }
 
