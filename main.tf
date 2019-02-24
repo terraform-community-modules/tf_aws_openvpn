@@ -88,6 +88,7 @@ resource "aws_instance" "openvpn" {
 
   tags {
     Name = "${var.name}"
+    Role = "vpn"
   }
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
@@ -230,48 +231,48 @@ variable "start_vpn" {
 #   }
 # }
 
-resource "aws_elb" "openvpn" {
-  name                        = "openvpn-elb"
-  subnets                     = ["${var.public_subnet_ids}"]
-  internal                    = false
-  idle_timeout                = 30
-  connection_draining         = true
-  connection_draining_timeout = 30
-  instances                   = ["${aws_instance.openvpn.id}"]
-  security_groups             = ["${aws_security_group.openvpn.id}"]
+# resource "aws_elb" "openvpn" {
+#   name                        = "openvpn-elb"
+#   subnets                     = ["${var.public_subnet_ids}"]
+#   internal                    = false
+#   idle_timeout                = 30
+#   connection_draining         = true
+#   connection_draining_timeout = 30
+#   instances                   = ["${aws_instance.openvpn.id}"]
+#   security_groups             = ["${aws_security_group.openvpn.id}"]
 
-  listener {
-    instance_port      = 443
-    instance_protocol  = "https"
-    lb_port            = 443
-    lb_protocol        = "https"
-    ssl_certificate_id = "${var.cert_arn}"
-  }
+#   listener {
+#     instance_port      = 443
+#     instance_protocol  = "https"
+#     lb_port            = 443
+#     lb_protocol        = "https"
+#     ssl_certificate_id = "${var.cert_arn}"
+#   }
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    target              = "TCP:443"
-    interval            = 20
-  }
+#   health_check {
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 2
+#     timeout             = 5
+#     target              = "TCP:443"
+#     interval            = 20
+#   }
 
-  tags {
-    Name = "openvpn-elb"
-  }
-}
+#   tags {
+#     Name = "openvpn-elb"
+#   }
+# }
 
-resource "aws_route53_record" "openvpn-web" {
-  zone_id = "${var.route_zone_id}"
-  name    = "vpn-web.${var.domain_name}"
-  type    = "A"
+# resource "aws_route53_record" "openvpn-web" {
+#   zone_id = "${var.route_zone_id}"
+#   name    = "vpn-web.${var.domain_name}"
+#   type    = "A"
 
-  alias {
-    name                   = "${aws_elb.openvpn.dns_name}"
-    zone_id                = "${aws_elb.openvpn.zone_id}"
-    evaluate_target_health = false
-  }
-}
+#   alias {
+#     name                   = "${aws_elb.openvpn.dns_name}"
+#     zone_id                = "${aws_elb.openvpn.zone_id}"
+#     evaluate_target_health = false
+#   }
+# }
 
 resource "aws_route53_record" "openvpn" {
   zone_id = "${var.route_zone_id}"
