@@ -88,7 +88,7 @@ resource "aws_instance" "openvpn" {
 
   tags {
     Name = "${var.name}"
-    Role = "vpn"
+    
   }
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
@@ -120,9 +120,15 @@ resource "null_resource" shutdownvpn {
 
 #configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
 #it must reside in the aws_eip resource to be able to establish a connection
+
 resource "aws_eip" "openvpnip" {
+
   vpc      = true
   instance = "${aws_instance.openvpn.id}"
+
+  tags {
+    Role = "vpn"
+  }
 
   provisioner "remote-exec" {
     connection {
