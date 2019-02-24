@@ -97,7 +97,7 @@ resource "aws_instance" "openvpn" {
   user_data = <<USERDATA
 admin_user=${var.openvpn_admin_user}
 admin_pw=${var.openvpn_admin_pw}
-sudo apt install -y python
+sudo apt-get install -y python
 USERDATA
 }
 
@@ -145,6 +145,9 @@ resource "aws_eip" "openvpnip" {
       # Sleep 60 seconds until AMI is ready
       "sleep 60",
 
+      # Install python for ansible
+      "sudo apt-get -y install python",
+
       # Set VPN network info
       "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v ${element(split("/", var.vpn_cidr), 0)} ConfigPut",
 
@@ -190,6 +193,7 @@ resource "aws_eip" "openvpnip" {
   provisioner "local-exec" {
     command = <<EOT
       set -x
+      ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
       mkdir -p ~/openvpn_config
       cd ~/openvpn_config
       rm -f ~/openvpn_config/ta.key
@@ -280,7 +284,7 @@ variable "start_vpn" {
 #   }
 # }
 
-resource "aws_route53_record" "openvpn" {
+resource "aws_route53_record" "openvpn_record" {
   zone_id = "${var.route_zone_id}"
   name    = "vpn.${var.domain_name}"
   type    = "A"
