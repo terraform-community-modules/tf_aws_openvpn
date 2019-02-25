@@ -37,6 +37,14 @@ resource "aws_security_group" "openvpn" {
     cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
     description = "https"
   }
+  # see  https://openvpn.net/vpn-server-resources/amazon-web-services-ec2-tiered-appliance-quick-start-guide/
+  ingress {
+    protocol    = "tcp"
+    from_port   = 943
+    to_port     = 943
+    cidr_blocks = ["${var.remote_vpn_ip_cidr}"]
+    description = "admin ui"
+  }
   ingress {
     protocol    = "udp"
     from_port   = 1194
