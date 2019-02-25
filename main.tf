@@ -17,7 +17,7 @@ resource "aws_security_group" "openvpn" {
     protocol    = "-1"
     from_port   = 0
     to_port     = 0
-    cidr_blocks = ["${var.vpc_cidr}"]
+    cidr_blocks = ["${var.vpc_cidr}", "172.27.232.0/24", "192.168.92.0/24"]
     description = "all incoming traffic from vpc"
   }
 
