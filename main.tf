@@ -198,29 +198,29 @@ resource "aws_eip" "openvpnip" {
   #we download the connection config files, and alter the client.ovpn file to use a password file.
   ### note user must follow instructions on startvpn.sh to function
   ### todo : would be better to avoid all file movement in local exec.  startvpn should only start the service and nothing else.
-  provisioner "local-exec" {
-    command = <<EOT
-      set -x
-      ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
-      mkdir -p ~/openvpn_config
-      cd ~/openvpn_config
-      rm -f ~/openvpn_config/ta.key
-      rm -f ~/openvpn_config/client.ovpn
-      rm -f ~/openvpn_config/client.conf
-      rm -f ~/openvpn_config/client.key
-      rm -f ~/openvpn_config/client.crt
-      rm -f ~/openvpn_config/ca.crt
-      rm -f ~/openvpn_config/yourserver.txt
-      rm -f ~/openvpn_config/client_route.conf
-      scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' ${var.openvpn_admin_user}@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
-      ls -la
-      echo '${var.openvpn_user}' >> yourserver.txt
-      echo '${var.openvpn_user_pw}' >> yourserver.txt
-      sed -i 's/auth-user-pass/auth-user-pass yourserver.txt\npush "redirect-gateway def1 bypass-dhcp"/g' client.ovpn
-      sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=${var.openvpn_user}@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
-      mv client.ovpn openvpn.conf
-  EOT
-  }
+  # provisioner "local-exec" {
+  #   command = <<EOT
+  #     set -x
+  #     ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
+  #     mkdir -p ~/openvpn_config
+  #     cd ~/openvpn_config
+  #     rm -f ~/openvpn_config/ta.key
+  #     rm -f ~/openvpn_config/client.ovpn
+  #     rm -f ~/openvpn_config/client.conf
+  #     rm -f ~/openvpn_config/client.key
+  #     rm -f ~/openvpn_config/client.crt
+  #     rm -f ~/openvpn_config/ca.crt
+  #     rm -f ~/openvpn_config/yourserver.txt
+  #     rm -f ~/openvpn_config/client_route.conf
+  #     scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i '${var.local_key_path}' ${var.openvpn_admin_user}@${aws_eip.openvpnip.public_ip}:/usr/local/openvpn_as/scripts/seperate/* ~/openvpn_config/
+  #     ls -la
+  #     echo '${var.openvpn_user}' >> yourserver.txt
+  #     echo '${var.openvpn_user_pw}' >> yourserver.txt
+  #     sed -i 's/auth-user-pass/auth-user-pass yourserver.txt\npush "redirect-gateway def1 bypass-dhcp"/g' client.ovpn
+  #     sed -i '/# OVPN_ACCESS_SERVER_PROFILE=/c\# OVPN_ACCESS_SERVER_PROFILE=${var.openvpn_user}@${aws_eip.openvpnip.public_ip}/AUTOLOGIN\n# OVPN_ACCESS_SERVER_AUTOLOGIN=1' client.ovpn
+  #     mv client.ovpn openvpn.conf
+  # EOT
+  # }
 
   # read docs at readme.md for more information needed on routing.
   # todo : need to document for users how to create start vpn script and add to sudoers.  script should exist in /etc/openvpn.
