@@ -9,6 +9,8 @@ variable "remote_vpn_ip_cidr" {
   default = "0.0.0.0/0"
 }
 
+variable "remote_subnet_cidr" {}
+
 variable "public_subnet_ids" {
   default = []
 }
@@ -25,7 +27,7 @@ variable "openvpn_user_pw" {}
 variable "openvpn_admin_user" {}
 variable "openvpn_admin_pw" {}
 variable "vpn_cidr" {}
-variable "domain_name" {}
+variable "public_domain_name" {}
 variable "route_zone_id" {}
 
 variable "sleep" {
