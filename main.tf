@@ -18,7 +18,8 @@ resource "aws_security_group" "openvpn" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["${var.vpc_cidr}", "${var.vpn_cidr}", "${var.remote_subnet_cidr}"]
-    description = "all incoming traffic from vpc"
+
+    description = "all incoming traffic from vpc, vpn dhcp, and remote subnet"
   }
 
   # For OpenVPN Client Web Server & Admin Web UI
@@ -95,7 +96,7 @@ resource "aws_instance" "openvpn" {
   vpc_security_group_ids = ["${aws_security_group.openvpn.id}"]
 
   tags {
-    Name = "${var.name}"
+    Name  = "${var.name}"
     route = "public"
   }
 
@@ -130,7 +131,6 @@ resource "null_resource" shutdownvpn {
 #it must reside in the aws_eip resource to be able to establish a connection
 
 resource "aws_eip" "openvpnip" {
-
   vpc      = true
   instance = "${aws_instance.openvpn.id}"
 
@@ -195,7 +195,6 @@ resource "aws_eip" "openvpnip" {
     ]
   }
 
-  
   # After a remote exec, its possible to use local exec to add the ssh keys to the known hosts file.  this is done only once.
   provisioner "local-exec" {
     command = <<EOT
