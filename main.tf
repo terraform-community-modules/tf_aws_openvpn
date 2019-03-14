@@ -222,13 +222,20 @@ resource "null_resource" "provision_vpn" {
       timeout             = "10m"
     }
 
-    inline = ["set -x && sleep 20 && sudo apt-get install -y python"]
+    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
+    inline = [
+      #allow echo of input in bash.  Won't display pipes though!
+      "set -x",
+      # Sleep 60 seconds until AMI is ready
+      "sleep 60",
+    ]
   }
 
   provisioner "local-exec" {
     command = <<EOT
       set -x
       cd /vagrant
+      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn.id} && sleep 60
       ansible-playbook -i ansible/inventory ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
       ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
