@@ -138,68 +138,99 @@ resource "aws_eip" "openvpnip" {
     role = "vpn"
   }
 
-  provisioner "remote-exec" {
-    connection {
-      user        = "${var.openvpn_admin_user}"
-      host        = "${aws_eip.openvpnip.public_ip}"
-      private_key = "${var.private_key}"
-      timeout     = "10m"
-    }
+  # provisioner "remote-exec" {
+  #   connection {
+  #     user        = "${var.openvpn_admin_user}"
+  #     host        = "${aws_eip.openvpnip.public_ip}"
+  #     private_key = "${var.private_key}"
+  #     timeout     = "10m"
+  #   }
 
-    inline = [
-      #allow echo of input in bash.  Won't display pipes though!
-      "set -x",
+  #   inline = [
+  #     #allow echo of input in bash.  Won't display pipes though!
+  #     "set -x",
 
-      # Sleep 60 seconds until AMI is ready
-      "sleep 60",
+  #     # Sleep 60 seconds until AMI is ready
+  #     "sleep 60",
 
-      # Install python for ansible
-      "sudo apt-get -y install python",
+  #     # Install python for ansible
+  #     "sudo apt-get -y install python",
 
-      # Set VPN network info
-      "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v ${element(split("/", var.vpn_cidr), 0)} ConfigPut",
+  #     # Set VPN network info
+  #     "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v ${element(split("/", var.vpn_cidr), 0)} ConfigPut",
 
-      "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v ${element(split("/", var.vpn_cidr), 1)} ConfigPut",
+  #     "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v ${element(split("/", var.vpn_cidr), 1)} ConfigPut",
 
-      # here we enable tls which is required if we are to generate ta.key and client.ovpn files
-      "sudo /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value ='true' ConfigPut",
+  #     # here we enable tls which is required if we are to generate ta.key and client.ovpn files
+  #     "sudo /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value ='true' ConfigPut",
 
-      # Do a warm restart so the config is picked up
-      "sudo /usr/local/openvpn_as/scripts/sacli start",
-    ]
-  }
+  #     # Do a warm restart so the config is picked up
+  #     "sudo /usr/local/openvpn_as/scripts/sacli start",
+  #   ]
+  # }
 
-  provisioner "remote-exec" {
-    connection {
-      user        = "${var.openvpn_admin_user}"
-      host        = "${aws_eip.openvpnip.public_ip}"
-      private_key = "${var.private_key}"
-      timeout     = "10m"
-    }
+  # provisioner "remote-exec" {
+  #   connection {
+  #     user        = "${var.openvpn_admin_user}"
+  #     host        = "${aws_eip.openvpnip.public_ip}"
+  #     private_key = "${var.private_key}"
+  #     timeout     = "10m"
+  #   }
 
-    inline = [
-      "cd /usr/local/openvpn_as/scripts/",
+  #   inline = [
+  #     "cd /usr/local/openvpn_as/scripts/",
 
-      # todo : need to add a user that is different to the admin user.  currently they must be identical.
-      "echo ${var.openvpn_admin_pw} | sudo -S mkdir seperate",
+  #     # todo : need to add a user that is different to the admin user.  currently they must be identical.
+  #     "echo ${var.openvpn_admin_pw} | sudo -S mkdir seperate",
 
-      "set -x",
+  #     "set -x",
 
-      # this enables auto login: todo : check if theres a problem with not having this above the start command
-      "sudo ./sacli --user ${var.openvpn_user} --key 'prop_autologin' --value 'true' UserPropPut",
+  #     # this enables auto login: todo : check if theres a problem with not having this above the start command
+  #     "sudo ./sacli --user ${var.openvpn_user} --key 'prop_autologin' --value 'true' UserPropPut",
 
-      "sudo ./sacli --user ${var.openvpn_user} AutoGenerateOnBehalfOf",
-      "sudo ./sacli -o ./seperate --cn ${var.openvpn_user} get5",
-      "sudo chown ${var.openvpn_user} seperate/*",
-      "ls -la seperate",
-    ]
-  }
+  #     "sudo ./sacli --user ${var.openvpn_user} AutoGenerateOnBehalfOf",
+  #     "sudo ./sacli -o ./seperate --cn ${var.openvpn_user} get5",
+  #     "sudo chown ${var.openvpn_user} seperate/*",
+  #     "ls -la seperate",
+  #   ]
+  # }
 
   # After a remote exec, its possible to use local exec to add the ssh keys to the known hosts file.  this is done only once.
+  # provisioner "local-exec" {
+  #   command = <<EOT
+  #     set -x
+  #     ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
+  # EOT
+  # }
+}
+
+resource "null_resource" "provision_vpn" {
+  depends_on = ["aws_instance.openvpn", "aws_eip.openvpnip", "aws_route53_record.openvpn_record"]
+
+  triggers {
+    instanceid = "${ aws_instance.openvpn.id }"
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      user                = "${var.openvpn_admin_user}"
+      host                = "${aws_eip.openvpnip.public_ip}"
+      #bastion_host        = "bastion.firehawkfilm.com"
+      private_key         = "${var.private_key}"
+      #bastion_private_key = "${var.private_key}"
+      type                = "ssh"
+      timeout             = "10m"
+    }
+
+    inline = ["set -x && sleep 20 && sudo apt-get install -y python"]
+  }
+
   provisioner "local-exec" {
     command = <<EOT
       set -x
-      ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
+      cd /vagrant
+      ansible-playbook -i ansible/inventory ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
+      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
   }
 }
