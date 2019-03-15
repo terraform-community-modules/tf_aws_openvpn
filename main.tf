@@ -87,6 +87,7 @@ variable "source_dest_check" {
 }
 
 resource "aws_instance" "openvpn" {
+  depends_on = ["aws_internet_gateway.this"]
   ami               = "${var.ami}"
   instance_type     = "${var.instance_type}"
   key_name          = "${var.key_name}"
@@ -235,8 +236,26 @@ resource "null_resource" "provision_vpn" {
     command = <<EOT
       set -x
       cd /vagrant
+      ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn.id} && sleep 60
-      ansible-playbook -i ansible/inventory ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
+  EOT
+  }
+  provisioner "remote-exec" {
+    connection {
+      user                = "${var.openvpn_admin_user}"
+      host                = "${aws_eip.openvpnip.public_ip}"
+      private_key         = "${var.private_key}"
+      type                = "ssh"
+      timeout             = "10m"
+    }
+    inline = [
+      "set -x",
+      "sudo apt-get -y install python"
+    ]
+  }
+  provisioner "local-exec" {
+    command = <<EOT
+      set -x
       ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
   }
