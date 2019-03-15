@@ -86,8 +86,16 @@ variable "source_dest_check" {
   default = true
 }
 
+variable "igw_id" {}
+
+resource "null_resource" "gateway_dependency" {
+  triggers {
+    igw_id = "${var.igw_id}"
+  }
+}
+
 resource "aws_instance" "openvpn" {
-  depends_on = ["aws_internet_gateway.this"]
+  depends_on = ["null_resource.gateway_dependency"]
   ami               = "${var.ami}"
   instance_type     = "${var.instance_type}"
   key_name          = "${var.key_name}"
@@ -107,7 +115,6 @@ resource "aws_instance" "openvpn" {
   user_data = <<USERDATA
 admin_user=${var.openvpn_admin_user}
 admin_pw=${var.openvpn_admin_pw}
-sudo apt-get install -y python
 USERDATA
 }
 
@@ -138,71 +145,6 @@ resource "aws_eip" "openvpnip" {
   tags {
     role = "vpn"
   }
-
-  # provisioner "remote-exec" {
-  #   connection {
-  #     user        = "${var.openvpn_admin_user}"
-  #     host        = "${aws_eip.openvpnip.public_ip}"
-  #     private_key = "${var.private_key}"
-  #     timeout     = "10m"
-  #   }
-
-  #   inline = [
-  #     #allow echo of input in bash.  Won't display pipes though!
-  #     "set -x",
-
-  #     # Sleep 60 seconds until AMI is ready
-  #     "sleep 60",
-
-  #     # Install python for ansible
-  #     "sudo apt-get -y install python",
-
-  #     # Set VPN network info
-  #     "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v ${element(split("/", var.vpn_cidr), 0)} ConfigPut",
-
-  #     "sudo /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v ${element(split("/", var.vpn_cidr), 1)} ConfigPut",
-
-  #     # here we enable tls which is required if we are to generate ta.key and client.ovpn files
-  #     "sudo /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value ='true' ConfigPut",
-
-  #     # Do a warm restart so the config is picked up
-  #     "sudo /usr/local/openvpn_as/scripts/sacli start",
-  #   ]
-  # }
-
-  # provisioner "remote-exec" {
-  #   connection {
-  #     user        = "${var.openvpn_admin_user}"
-  #     host        = "${aws_eip.openvpnip.public_ip}"
-  #     private_key = "${var.private_key}"
-  #     timeout     = "10m"
-  #   }
-
-  #   inline = [
-  #     "cd /usr/local/openvpn_as/scripts/",
-
-  #     # todo : need to add a user that is different to the admin user.  currently they must be identical.
-  #     "echo ${var.openvpn_admin_pw} | sudo -S mkdir seperate",
-
-  #     "set -x",
-
-  #     # this enables auto login: todo : check if theres a problem with not having this above the start command
-  #     "sudo ./sacli --user ${var.openvpn_user} --key 'prop_autologin' --value 'true' UserPropPut",
-
-  #     "sudo ./sacli --user ${var.openvpn_user} AutoGenerateOnBehalfOf",
-  #     "sudo ./sacli -o ./seperate --cn ${var.openvpn_user} get5",
-  #     "sudo chown ${var.openvpn_user} seperate/*",
-  #     "ls -la seperate",
-  #   ]
-  # }
-
-  # After a remote exec, its possible to use local exec to add the ssh keys to the known hosts file.  this is done only once.
-  # provisioner "local-exec" {
-  #   command = <<EOT
-  #     set -x
-  #     ssh-keyscan -H ${aws_eip.openvpnip.public_ip} >> ~/.ssh/known_hosts
-  # EOT
-  # }
 }
 
 resource "null_resource" "provision_vpn" {
