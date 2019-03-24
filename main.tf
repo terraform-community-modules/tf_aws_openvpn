@@ -198,7 +198,8 @@ resource "null_resource" "provision_vpn" {
   provisioner "local-exec" {
     command = <<EOT
       set -x
-      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
+      echo 'remote_subnet_cidr = ${var.remote_subnet_cidr}'
+      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
   }
 }
