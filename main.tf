@@ -198,7 +198,7 @@ resource "null_resource" "provision_vpn" {
       set -x
       echo "TF_VAR_remote_subnet_cidr: $TF_VAR_remote_subnet_cidr"
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
-      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "private_subnet1=${var.private_subnet1} public_subnet1=${var.public_subnet1} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
+      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "private_subnet1=${element(var.private_subnets, 1)} public_subnet1=${element(var.public_subnets, 1)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
   }
 }
