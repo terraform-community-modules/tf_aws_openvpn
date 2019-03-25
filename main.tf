@@ -86,8 +86,6 @@ variable "source_dest_check" {
   default = true
 }
 
-variable "igw_id" {}
-
 resource "null_resource" "gateway_dependency" {
   triggers {
     igw_id = "${var.igw_id}"
@@ -198,8 +196,9 @@ resource "null_resource" "provision_vpn" {
   provisioner "local-exec" {
     command = <<EOT
       set -x
-      echo 'remote_subnet_cidr = ${var.remote_subnet_cidr}'
-      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
+      echo "TF_VAR_remote_subnet_cidr: $TF_VAR_remote_subnet_cidr"
+      echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
+      ansible-playbook -i ansible/inventory ansible/openvpn.yaml -v --extra-vars "private_subnet1=${var.private_subnet1} public_subnet1=${var.public_subnet1} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
   EOT
   }
 }

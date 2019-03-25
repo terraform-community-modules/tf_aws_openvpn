@@ -33,3 +33,10 @@ variable "route_zone_id" {}
 variable "sleep" {
   default = false
 }
+
+variable "igw_id" {}
+
+variable "private_subnet1" {}
+variable "private_subnet2" {}
+variable "public_subnet1" {}
+variable "public_subnet2" {}
