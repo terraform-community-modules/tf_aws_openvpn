@@ -196,6 +196,7 @@ resource "null_resource" "provision_vpn" {
   provisioner "local-exec" {
     command = <<EOT
       set -x
+      echo "environment vars in this case seem to need to be pushed via the shell"
       echo "TF_VAR_remote_subnet_cidr: $TF_VAR_remote_subnet_cidr"
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
       echo "private_subnet1: ${element(var.private_subnets, 0)}"
