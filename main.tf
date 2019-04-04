@@ -121,7 +121,7 @@ resource "null_resource" "start-node" {
   count = "${var.sleep ? 0 : 1}"
 
   provisioner "local-exec" {
-    command = "aws ec2 start-instances --instance-ids ${aws_instance.openvpn.id}"
+    command = "aws ec2 start-instances --instance-ids ${aws_instance.openvpn.id} && sudo service openvpn restart"
   }
 }
 
@@ -129,7 +129,7 @@ resource "null_resource" shutdownvpn {
   count = "${var.sleep ? 1 : 0}"
 
   provisioner "local-exec" {
-    command = "aws ec2 stop-instances --instance-ids ${aws_instance.openvpn.id}"
+    command = "aws ec2 stop-instances --instance-ids ${aws_instance.openvpn.id} && sudo service openvpn stop"
   }
 }
 
