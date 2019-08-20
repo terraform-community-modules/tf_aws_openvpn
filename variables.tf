@@ -25,6 +25,9 @@ variable "cert_arn" {
 variable "key_name" {
 }
 
+variable "bastion_ip" {
+}
+
 variable "private_key" {
 }
 

@@ -183,7 +183,9 @@ resource "null_resource" "provision_vpn" {
       set -x
       cd /vagrant
       ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
-      ansible-playbook -i ansible/inventory ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${aws_eip.openvpnip.public_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${aws_eip.openvpnip.public_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${aws_eip.openvpnip.private_ip} bastion_ip=${var.bastion_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private.$TF_VAR_public_domain host_ip=${aws_eip.openvpnip.private_ip}"
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn.id} && sleep 60
   
 EOT
