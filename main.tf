@@ -161,6 +161,8 @@ resource "null_resource" "provision_vpn" {
 
   triggers = {
     instanceid = aws_instance.openvpn.id
+    # If the address changes, the vpn must be provisioned again.
+    vpn_address = local.vpn_address
   }
 
   provisioner "remote-exec" {
