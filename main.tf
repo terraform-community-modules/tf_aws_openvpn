@@ -147,6 +147,11 @@ resource "aws_eip" "openvpnip" {
   }
 }
 
+locals {
+  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":"${aws_eip.openvpnip.public_ip}"
+}
+
+
 resource "null_resource" "provision_vpn" {
   depends_on = [
     aws_instance.openvpn,
@@ -182,7 +187,7 @@ resource "null_resource" "provision_vpn" {
     command = <<EOT
       set -x
       cd /vagrant
-      ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_hostname=vpn.${var.public_domain_name} set_bastion=false"
+      ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_address=${local.vpn_address} set_bastion=false"
       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${aws_eip.openvpnip.public_ip}"
       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${aws_eip.openvpnip.private_ip} bastion_ip=${var.bastion_ip}"
       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private.$TF_VAR_public_domain host_ip=${aws_eip.openvpnip.private_ip}"
@@ -212,7 +217,7 @@ EOT
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
       echo "private_subnet1: ${element(var.private_subnets, 0)}"
       echo "public_subnet1: ${element(var.public_subnets, 0)}"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip vpn_address=${local.vpn_address} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
       # configure routes on onsite workstation/render nodes - consider disabling if workstation not present.
       # ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v -v --extra-vars "variable_host=workstation.firehawkvfx.com variable_user=deadlineuser hostname=workstation.firehawkvfx.com ansible_ssh_private_key_file=$TF_VAR_onsite_workstation_ssh_key"
   
@@ -237,11 +242,14 @@ variable "start_vpn" {
   default = true
 }
 
-resource "aws_route53_record" "openvpn_record" {
-  zone_id = var.route_zone_id
-  name    = "vpn.${var.public_domain_name}"
-  type    = "A"
-  ttl     = 300
-  records = [aws_eip.openvpnip.public_ip]
+variable "route_public_domain_name" {
 }
 
+resource "aws_route53_record" "openvpn_record" {
+  count   = var.route_public_domain_name ? 1 : 0
+  zone_id = element(concat(list(var.route_zone_id), list("")), 0)
+  name    = element(concat(list("vpn.${var.public_domain_name}"), list("")), 0)
+  type    = "A"
+  ttl     = 300
+  records = [element(concat(list(aws_eip.openvpnip.public_ip), list("")), 0)]
+}
