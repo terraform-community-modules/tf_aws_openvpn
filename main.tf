@@ -5,6 +5,7 @@
 # You should define this variable as your remote static ip adress to limit vpn exposure to the public internet
 
 resource "aws_security_group" "openvpn" {
+  count       = var.create_vpn ? 1 : 0
   name        = var.name
   vpc_id      = var.vpc_id
   description = "OpenVPN security group"
@@ -94,6 +95,7 @@ resource "null_resource" "gateway_dependency" {
 }
 
 resource "aws_instance" "openvpn" {
+  count = var.create_vpn ? 1 : 0
   depends_on        = [null_resource.gateway_dependency]
   ami               = var.ami
   instance_type     = var.instance_type
@@ -101,7 +103,7 @@ resource "aws_instance" "openvpn" {
   subnet_id         = element(var.public_subnet_ids, 0)
   source_dest_check = var.source_dest_check
 
-  vpc_security_group_ids = [aws_security_group.openvpn.id]
+  vpc_security_group_ids = [local.security_group_id]
 
   tags = {
     Name  = var.name
@@ -120,18 +122,18 @@ USERDATA
 
 #wakeup a node after sleep
 resource "null_resource" "start-node" {
-  count = var.sleep ? 0 : 1
+  count = ( ! var.sleep && var.create_vpn ) ? 1 : 0
 
   provisioner "local-exec" {
-    command = "aws ec2 start-instances --instance-ids ${aws_instance.openvpn.id} && sudo service openvpn restart"
+    command = "aws ec2 start-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sudo service openvpn restart"
   }
 }
 
 resource "null_resource" "shutdownvpn" {
-  count = var.sleep ? 1 : 0
+  count = var.sleep && var.create_vpn ? 1 : 0
 
   provisioner "local-exec" {
-    command = "aws ec2 stop-instances --instance-ids ${aws_instance.openvpn.id} && sudo service openvpn stop"
+    command = "aws ec2 stop-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sudo service openvpn stop"
   }
 }
 
@@ -139,8 +141,9 @@ resource "null_resource" "shutdownvpn" {
 #it must reside in the aws_eip resource to be able to establish a connection
 
 resource "aws_eip" "openvpnip" {
+  count = var.create_vpn ? 1 : 0
   vpc      = true
-  instance = aws_instance.openvpn.id
+  instance = aws_instance.openvpn[count.index].id
 
   tags = {
     role = "vpn"
@@ -148,19 +151,20 @@ resource "aws_eip" "openvpnip" {
 }
 
 locals {
-  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":"${aws_eip.openvpnip.public_ip}"
+  private_ip = "${element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)}"
+  public_ip = "${element(concat(aws_eip.openvpnip.*.public_ip, list("")), 0)}"
+  id = "${element(concat(aws_instance.openvpn.*.id, list("")), 0)}"
+  security_group_id = "${element(concat(aws_security_group.openvpn.*.id, list("")), 0)}"
+  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":"${local.public_ip}"
 }
 
 
 resource "null_resource" "provision_vpn" {
-  depends_on = [
-    aws_instance.openvpn,
-    aws_eip.openvpnip,
-    aws_route53_record.openvpn_record,
-  ]
+  count = var.create_vpn ? 1 : 0
+  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   triggers = {
-    instanceid = aws_instance.openvpn.id
+    instanceid = element(concat(list(aws_instance.openvpn.*.id), list("")), 0)
     # If the address changes, the vpn must be provisioned again.
     vpn_address = local.vpn_address
   }
@@ -168,7 +172,7 @@ resource "null_resource" "provision_vpn" {
   provisioner "remote-exec" {
     connection {
       user = var.openvpn_admin_user
-      host = aws_eip.openvpnip.public_ip
+      host = local.public_ip
       private_key = var.private_key
       type    = "ssh"
       timeout = "10m"
@@ -185,11 +189,11 @@ resource "null_resource" "provision_vpn" {
     command = <<EOT
       set -x
       cd /vagrant
-      ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${aws_eip.openvpnip.public_ip} public_address=${local.vpn_address} set_bastion=false"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${aws_eip.openvpnip.public_ip}"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${aws_eip.openvpnip.private_ip} bastion_ip=${var.bastion_ip}"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${aws_eip.openvpnip.private_ip}"
-      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn.id} && sleep 60
+      ansible-playbook -i ansible/inventory/hosts ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} set_bastion=false"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip}"
+      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
   
 EOT
 
@@ -197,7 +201,7 @@ EOT
   provisioner "remote-exec" {
     connection {
       user        = var.openvpn_admin_user
-      host        = aws_eip.openvpnip.public_ip
+      host        = local.public_ip
       private_key = var.private_key
       type        = "ssh"
       timeout     = "10m"
@@ -225,15 +229,15 @@ EOT
 }
 
 output "id" {
-  value = aws_instance.openvpn.id
+  value = local.id
 }
 
 output "private_ip" {
-  value = aws_instance.openvpn.private_ip
+  value = local.private_ip
 }
 
 output "public_ip" {
-  value = aws_eip.openvpnip.public_ip
+  value = local.public_ip
 }
 
 variable "start_vpn" {
@@ -244,10 +248,10 @@ variable "route_public_domain_name" {
 }
 
 resource "aws_route53_record" "openvpn_record" {
-  count   = var.route_public_domain_name ? 1 : 0
+  count   = var.route_public_domain_name && var.create_vpn ? 1 : 0
   zone_id = element(concat(list(var.route_zone_id), list("")), 0)
   name    = element(concat(list("vpn.${var.public_domain_name}"), list("")), 0)
   type    = "A"
   ttl     = 300
-  records = [element(concat(list(aws_eip.openvpnip.public_ip), list("")), 0)]
+  records = [local.public_ip]
 }

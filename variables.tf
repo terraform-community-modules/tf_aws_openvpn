@@ -2,6 +2,8 @@ variable "name" {
   default = "openvpn"
 }
 
+variable "create_vpn" {}
+
 variable "vpc_id" {
 }
 
