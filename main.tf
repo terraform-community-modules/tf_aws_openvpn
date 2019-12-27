@@ -105,6 +105,10 @@ resource "aws_instance" "openvpn" {
 
   vpc_security_group_ids = [local.security_group_id]
 
+  root_block_device {
+    delete_on_termination = true
+  }
+
   tags = {
     Name  = var.name
     route = "public"
