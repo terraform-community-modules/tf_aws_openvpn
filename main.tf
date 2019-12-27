@@ -164,7 +164,7 @@ resource "null_resource" "provision_vpn" {
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   triggers = {
-    instanceid = element(concat(list(aws_instance.openvpn.*.id), list("")), 0)
+    instanceid = local.id
     # If the address changes, the vpn must be provisioned again.
     vpn_address = local.vpn_address
   }
