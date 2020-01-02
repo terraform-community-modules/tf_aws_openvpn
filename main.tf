@@ -94,9 +94,15 @@ resource "null_resource" "gateway_dependency" {
   }
 }
 
+resource "null_resource" "bastion_dependency" {
+  triggers = {
+    bastion_dependency = var.bastion_dependency
+  }
+}
+
 resource "aws_instance" "openvpn" {
   count = var.create_vpn ? 1 : 0
-  depends_on        = [null_resource.gateway_dependency]
+  depends_on        = [null_resource.gateway_dependency, null_resource.bastion_dependency]
   ami               = var.ami
   instance_type     = var.instance_type
   key_name          = var.key_name

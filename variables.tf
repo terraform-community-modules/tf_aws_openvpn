@@ -78,3 +78,4 @@ variable "public_subnets" {
   default = []
 }
 
+variable "bastion_dependency" {}
