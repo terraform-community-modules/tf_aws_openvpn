@@ -172,8 +172,21 @@ locals {
   id = "${element(concat(aws_instance.openvpn.*.id, list("")), 0)}"
   security_group_id = "${element(concat(aws_security_group.openvpn.*.id, list("")), 0)}"
   vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":"${local.public_ip}"
+  private_route_table_id         = "${element(concat(var.private_route_table_ids, list("")), 0)}"
+  public_route_table_id         = "${element(concat(var.public_route_table_ids, list("")), 0)}"
 }
 
+variable "route_public_domain_name" {
+}
+
+resource "aws_route53_record" "openvpn_record" {
+  count   = var.route_public_domain_name && var.create_vpn ? 1 : 0
+  zone_id = element(concat(list(var.route_zone_id), list("")), 0)
+  name    = element(concat(list("vpn.${var.public_domain_name}"), list("")), 0)
+  type    = "A"
+  ttl     = 300
+  records = [local.public_ip]
+}
 
 resource "null_resource" "provision_vpn" {
   count = var.create_vpn ? 1 : 0
@@ -184,6 +197,32 @@ resource "null_resource" "provision_vpn" {
     # If the address changes, the vpn must be provisioned again.
     vpn_address = local.vpn_address
   }
+
+### START this segment is termporary to deal with a cloud init bug
+  provisioner "remote-exec" {
+    connection {
+      user = var.openvpn_admin_user
+      host = local.public_ip
+      private_key = var.private_key
+      type    = "ssh"
+      timeout = "10m"
+    }
+    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
+    inline = [
+      "set -x",
+      "echo 'instance up'",
+      "sleep 30",
+    ]
+  }
+  provisioner "local-exec" {
+    command = <<EOT
+      . /vagrant/scripts/exit_test.sh
+      set -x
+      cd /deployuser
+      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
+EOT
+  }
+### END this segment is termporary to deal with a cloud init bug
 
   provisioner "remote-exec" {
     connection {
@@ -196,20 +235,25 @@ resource "null_resource" "provision_vpn" {
     #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "set -x",
-      "sleep 60",
+      # "sleep 35",
+      # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get -y install python",
     ]
   }
+
+
 
   provisioner "local-exec" {
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
       set -x
       cd /deployuser
-      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_bastion=true"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_vpn=true"
       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"
       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"
       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"
-      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
+      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 30
 EOT
   }
   provisioner "remote-exec" {
@@ -222,8 +266,9 @@ EOT
     }
     inline = [
       "set -x",
-      "sleep 30",
-      "sudo apt-get -y install python",
+      "echo 'instance up'",
+      # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done"
+      # "sudo apt-get -y install python",
     ]
   }
   provisioner "local-exec" {
@@ -256,14 +301,57 @@ variable "start_vpn" {
   default = true
 }
 
-variable "route_public_domain_name" {
+# route tables to send traffic to the remote subnet are configured once the vpn is provisioned.
+
+resource "aws_route" "private_openvpn_remote_subnet_gateway" {
+  count = var.create_vpn ? length(var.private_route_table_ids) : 0
+  depends_on = [null_resource.provision_vpn]
+
+  route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
+  destination_cidr_block = var.remote_subnet_cidr
+  instance_id            = local.id
+
+  timeouts {
+    create = "5m"
+  }
 }
 
-resource "aws_route53_record" "openvpn_record" {
-  count   = var.route_public_domain_name && var.create_vpn ? 1 : 0
-  zone_id = element(concat(list(var.route_zone_id), list("")), 0)
-  name    = element(concat(list("vpn.${var.public_domain_name}"), list("")), 0)
-  type    = "A"
-  ttl     = 300
-  records = [local.public_ip]
+resource "aws_route" "public_openvpn_remote_subnet_gateway" {
+  count = var.create_vpn ? length(var.public_route_table_ids) : 0
+  depends_on = [null_resource.provision_vpn]
+
+  route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
+  destination_cidr_block = var.remote_subnet_cidr
+  instance_id            = local.id
+
+  timeouts {
+    create = "5m"
+  }
+}
+
+### routes may be needed for traffic going back to open vpn dhcp adresses
+resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
+  count = var.create_vpn ? length(var.private_route_table_ids) : 0
+  depends_on = [null_resource.provision_vpn]
+
+  route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
+  destination_cidr_block = var.vpn_cidr
+  instance_id            = local.id
+
+  timeouts {
+    create = "5m"
+  }
+}
+
+resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
+  count = var.create_vpn ? length(var.public_route_table_ids) : 0
+  depends_on = [null_resource.provision_vpn]
+
+  route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
+  destination_cidr_block = var.vpn_cidr
+  instance_id            = local.id
+
+  timeouts {
+    create = "5m"
+  }
 }

@@ -79,3 +79,6 @@ variable "public_subnets" {
 }
 
 variable "bastion_dependency" {}
+
+variable "private_route_table_ids" {}
+variable "public_route_table_ids" {}
