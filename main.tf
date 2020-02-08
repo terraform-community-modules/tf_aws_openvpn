@@ -212,6 +212,7 @@ resource "null_resource" "provision_vpn" {
       "set -x",
       "echo 'instance up'",
       "sleep 30",
+      "sudo apt-get -y update",
     ]
   }
   provisioner "local-exec" {
