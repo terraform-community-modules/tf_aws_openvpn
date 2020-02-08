@@ -204,16 +204,13 @@ resource "null_resource" "provision_vpn" {
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
       set -x
-      cd /vagrant
-      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} set_bastion=false"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "variable_host=firehawkgateway variable_user=deployuser private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"; exit_test
-      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60; exit_test
-  
+      cd /deployuser
+      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_bastion=true"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"
+      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
 EOT
-
   }
   provisioner "remote-exec" {
     connection {
@@ -225,6 +222,7 @@ EOT
     }
     inline = [
       "set -x",
+      "sleep 30",
       "sudo apt-get -y install python",
     ]
   }
@@ -237,12 +235,8 @@ EOT
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
       echo "private_subnet1: ${element(var.private_subnets, 0)}"
       echo "public_subnet1: ${element(var.public_subnets, 0)}"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip vpn_address=${local.vpn_address} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/deadline-db-check.yaml -v; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/deadline-db-restart.yaml -v; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/deadline-db-check.yaml -v; exit_test
+      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip vpn_address=${local.vpn_address} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
 EOT
-
   }
 }
 
