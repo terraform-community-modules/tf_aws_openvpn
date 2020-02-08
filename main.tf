@@ -216,6 +216,7 @@ EOT
     }
     inline = [
       "set -x",
+      "sleep 30",
       "sudo apt-get -y install python",
     ]
   }
