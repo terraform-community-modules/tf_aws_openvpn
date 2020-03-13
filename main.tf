@@ -281,7 +281,8 @@ EOT
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
       echo "private_subnet1: ${element(var.private_subnets, 0)}"
       echo "public_subnet1: ${element(var.public_subnets, 0)}"
-      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip vpn_address=${local.vpn_address} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"
+      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "variable_host=openvpnip vpn_address=${local.vpn_address} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
+      . /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
 EOT
   }
 }
