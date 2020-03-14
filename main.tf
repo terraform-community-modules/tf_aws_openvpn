@@ -212,6 +212,7 @@ resource "null_resource" "provision_vpn" {
       "set -x",
       "echo 'instance up'",
       "sleep 30",
+      "ps aux | grep [a]pt",
       "sudo apt-get -y update",
     ]
   }
@@ -236,9 +237,11 @@ EOT
     #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "set -x",
+      "ls /var/lib/cloud/instance/",
       # "sleep 35",
       # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done",
-      "sudo apt-get -y update",
+      # "sudo apt-get -y update",
+      "ps aux | grep [a]pt",
       "sudo apt-get -y install python",
     ]
   }
