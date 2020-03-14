@@ -242,6 +242,7 @@ EOT
       # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done",
       # "sudo apt-get -y update",
       "ps aux | grep [a]pt",
+      "sudo rm /var/lib/apt/lists/lock", # remove lock, bug with openvpn ami.  Only ever do this after a reboot.
       "sudo apt-get -y install python",
     ]
   }
