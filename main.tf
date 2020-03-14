@@ -214,6 +214,9 @@ resource "null_resource" "provision_vpn" {
       "sleep 30",
       "ps aux | grep [a]pt",
       "sudo apt-get -y update",
+      "ps aux | grep [a]pt",
+      "sleep 30",
+      "ps aux | grep [a]pt",
     ]
   }
   provisioner "local-exec" {
@@ -243,6 +246,7 @@ EOT
       # "sudo apt-get -y update",
       "ps aux | grep [a]pt",
       "sudo rm /var/lib/apt/lists/lock", # remove lock, bug with openvpn ami.  Only ever do this after a reboot.
+      "sudo rm /var/lib/dpkg/lock",
       "sudo apt-get -y install python",
     ]
   }
