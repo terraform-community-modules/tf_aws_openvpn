@@ -222,7 +222,7 @@ resource "null_resource" "provision_vpn" {
       "sudo apt-get -y update",
       "ps aux | grep [a]pt",
       "sudo apt-get -y install python",
-      "ps aux | grep [a]pt",
+      "echo '...Finished bootstrapping'",
     ]
   }
   provisioner "local-exec" {
