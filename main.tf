@@ -212,10 +212,10 @@ resource "null_resource" "provision_vpn" {
       "set -x",
       "echo 'instance up'",
       "ps aux | grep [a]pt",
-      "systemctl stop apt-daily.service",
-      "systemctl kill --kill-who=all apt-daily.service",
+      "sudo systemctl stop apt-daily.service",
+      "sudo systemctl kill --kill-who=all apt-daily.service",
       # wait until `apt-get updated` has been killed
-      "while ! (systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done",
+      "while ! (sudo systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done",
       "ps aux | grep [a]pt",
       # now proceed with own APT tasks
       # apt install -y python
