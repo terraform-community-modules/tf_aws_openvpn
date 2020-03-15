@@ -207,15 +207,21 @@ resource "null_resource" "provision_vpn" {
       type    = "ssh"
       timeout = "10m"
     }
-    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
+    # this resolves update issue https://unix.stackexchange.com/questions/315502/how-to-disable-apt-daily-service-on-ubuntu-cloud-vm-image
     inline = [
       "set -x",
       "echo 'instance up'",
-      "sleep 30",
       "ps aux | grep [a]pt",
+      "systemctl stop apt-daily.service",
+      "systemctl kill --kill-who=all apt-daily.service",
+      # wait until `apt-get updated` has been killed
+      "while ! (systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done",
+      "ps aux | grep [a]pt",
+      # now proceed with own APT tasks
+      # apt install -y python
       "sudo apt-get -y update",
       "ps aux | grep [a]pt",
-      "sleep 30",
+      "sudo apt-get -y install python",
       "ps aux | grep [a]pt",
     ]
   }
@@ -240,14 +246,15 @@ EOT
     #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "set -x",
-      "ls /var/lib/cloud/instance/",
-      # "sleep 35",
-      # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done",
-      # "sudo apt-get -y update",
-      "ps aux | grep [a]pt",
-      "sudo rm /var/lib/apt/lists/lock", # remove lock, bug with openvpn ami.  Only ever do this after a reboot.
-      "sudo rm /var/lib/dpkg/lock",
-      "sudo apt-get -y install python",
+      "echo 'instance up'",
+      # "ls /var/lib/cloud/instance/",
+      # # "sleep 35",
+      # # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done",
+      # # "sudo apt-get -y update",
+      # "ps aux | grep [a]pt",
+      # "sudo rm /var/lib/apt/lists/lock", # remove lock, bug with openvpn ami.  Only ever do this after a reboot.
+      # "sudo rm /var/lib/dpkg/lock",
+      # "sudo apt-get -y install python",
     ]
   }
 
