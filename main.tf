@@ -244,7 +244,7 @@ EOT
       "sudo apt-get -y install python2.7-minimal python2.7",
       "which python2.7",
       "ls /usr/bin",
-      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi"
+      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
       "echo '...Finished bootstrapping'",
       "echo 'instance up'",
     ]
