@@ -218,12 +218,6 @@ resource "null_resource" "provision_vpn" {
       "ps aux | grep [a]pt",
       "sudo apt-get -y update",
       "sleep 10",
-      "ps aux | grep [a]pt",
-      "sudo apt-get -y install python2.7-minimal python2.7",
-      "which python2.7",
-      "ls /usr/bin",
-      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi"
-      "echo '...Finished bootstrapping'",
     ]
   }
   provisioner "local-exec" {
@@ -246,6 +240,12 @@ EOT
     }
     #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
+      "ps aux | grep [a]pt",
+      "sudo apt-get -y install python2.7-minimal python2.7",
+      "which python2.7",
+      "ls /usr/bin",
+      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi"
+      "echo '...Finished bootstrapping'",
       "echo 'instance up'",
     ]
   }
