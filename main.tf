@@ -218,7 +218,7 @@ resource "null_resource" "provision_vpn" {
       "ps aux | grep [a]pt",
       "sudo apt-get -y update",
       "ps aux | grep [a]pt",
-      "sudo apt-get -y install python",
+      "sudo apt-get -y install python2.7",
       "echo '...Finished bootstrapping'",
     ]
   }
