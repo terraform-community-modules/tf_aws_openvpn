@@ -216,7 +216,7 @@ resource "null_resource" "provision_vpn" {
       "sudo systemctl kill --kill-who=all apt-daily.service",
       "while ! (sudo systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done", # wait until `apt-get updated` has been killed
       "ps aux | grep [a]pt",
-      "sudo apt-get -y update",
+      "sudo apt-get -y update && sudo apt-get -y upgrade",
       "ps aux | grep [a]pt",
       "sudo apt-get -y install python2.7",
       "which python",
