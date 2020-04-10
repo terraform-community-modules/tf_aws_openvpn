@@ -211,11 +211,16 @@ resource "null_resource" "provision_vpn" {
     inline = [
       "set -x",
       "echo 'instance up'",
+      "lsb_release -a",
       "ps aux | grep [a]pt",
       "sudo systemctl stop apt-daily.service",
       "sudo systemctl kill --kill-who=all apt-daily.service",
       "while ! (sudo systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done", # wait until `apt-get updated` has been killed
       "ps aux | grep [a]pt",
+      "systemctl status apt-daily.service",
+      "sudo systemctl stop apt.systemd.daily",
+      "sudo systemctl kill --kill-who=all apt.systemd.daily",
+      "while ! (sudo systemctl list-units --all apt.systemd.daily | egrep -q '(dead|failed)'); do sleep 1; done", # wait until `apt.systemd.daily` has been killed
       "sudo apt-get -y update",
       "sleep 10",
     ]
@@ -244,6 +249,7 @@ EOT
       "sudo apt-get -y install python2.7-minimal python2.7",
       "which python2.7",
       "ls /usr/bin",
+      "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
       "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
       "echo '...Finished bootstrapping'",
       "echo 'instance up'",
