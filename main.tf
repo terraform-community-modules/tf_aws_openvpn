@@ -213,51 +213,14 @@ resource "null_resource" "provision_vpn" {
       "echo 'instance up'",
       "lsb_release -a",
       "ps aux | grep [a]pt",
+      "sudo cat /etc/systemd/system.conf",
       "sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true",
       "sudo apt-get -y update",
-      "sudo apt-get -y install python2.7-minimal python2.7",
-      # "sudo systemctl disable apt-daily.timer",
-      # "sudo systemctl disable apt-daily-upgrade.timer", # the timers may start the daily update, they need to be disabled, but it wont apply until after reboot. stop will also not resolve this.
-    ]
-  }
-  provisioner "local-exec" {
-    command = <<EOT
-      . /vagrant/scripts/exit_test.sh
-      set -x
-      cd /deployuser
-      aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
-EOT
-  }
-### END this segment is termporary to deal with a cloud init bug
-
-  provisioner "remote-exec" {
-    connection {
-      user = var.openvpn_admin_user
-      host = local.public_ip
-      private_key = var.private_key
-      type    = "ssh"
-      timeout = "10m"
-    }
-    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
-    inline = [
-      "sudo systemctl stop apt-daily.service",
-      "sudo systemctl kill --kill-who=all apt-daily.service",
-      "while ! (sudo systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)'); do sleep 1; done", # wait until `apt-get updated` has been killed
-      "ps aux | grep [a]pt",
-      # "systemctl status apt-daily.service",
-      # "sudo systemctl stop apt.systemd.daily",
-      # "sudo systemctl kill --kill-who=all apt.systemd.daily",
-      # "while ! (sudo systemctl list-units --all apt.systemd.daily | egrep -q '(dead|failed)'); do sleep 1; done", # wait until `apt.systemd.daily` has been killed
-      "sudo apt-get -y update",
-      "sleep 10",
-      "ps aux | grep [a]pt",
       "sudo apt-get -y install python2.7-minimal python2.7",
       "which python2.7",
       "ls /usr/bin",
       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
       "test=$(which python2.7); if [[ \"$test\" != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
-      # "sudo systemctl enable apt-daily.timer", # enable again to allow updates
-      # "sudo systemctl enable apt-daily-upgrade.timer",
       "echo '...Finished bootstrapping'",
     ]
   }
