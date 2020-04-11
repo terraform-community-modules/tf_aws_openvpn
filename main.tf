@@ -251,11 +251,11 @@ EOT
       "ps aux | grep [a]pt",
       "sudo apt-get -y install python2.7-minimal python2.7",
       "which python2.7",
-      "ls /usr/bin/*ython*",
+      "ls /usr/bin",
       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
-      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
-      # "sudo systemctl enable apt-daily.timer", # enable again to allow updates
-      # "sudo systemctl enable apt-daily-upgrade.timer",
+      "test=$(which python2.7); if [[ \"$test\" != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
+      "sudo systemctl enable apt-daily.timer", # enable again to allow updates
+      "sudo systemctl enable apt-daily-upgrade.timer",
       "echo '...Finished bootstrapping'",
     ]
   }
