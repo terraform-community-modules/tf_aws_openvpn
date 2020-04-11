@@ -213,7 +213,7 @@ resource "null_resource" "provision_vpn" {
       "echo 'instance up'",
       "lsb_release -a",
       "ps aux | grep [a]pt",
-      "systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true",
+      "sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true",
       "sudo apt-get -y update",
       "sudo apt-get -y install python2.7-minimal python2.7",
       # "sudo systemctl disable apt-daily.timer",
