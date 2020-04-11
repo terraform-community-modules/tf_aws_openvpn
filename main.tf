@@ -255,9 +255,8 @@ EOT
       "which python2.7",
       "ls /usr/bin",
       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
-      "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
+      "test=$(which python2.7); if [[ \"$test\" != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
       "echo '...Finished bootstrapping'",
-      # "echo 'instance up'",
     ]
   }
 
