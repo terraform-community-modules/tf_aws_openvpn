@@ -214,10 +214,8 @@ resource "null_resource" "provision_vpn" {
       "lsb_release -a",
       "ps aux | grep [a]pt",
       # "systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true",
-      # "sleep 30", # wait until its started
-      # "sudo systemctl start apt-daily.service", # cannot smtop or kill unless its started
-      "sudo systemctl disable apt-daily.timer",
-      "sudo systemctl disable apt-daily-upgrade.timer", # the timers may start the daily update, they need to be disabled, but it wont apply until after reboot. stop will also not resolve this.
+      # "sudo systemctl disable apt-daily.timer",
+      # "sudo systemctl disable apt-daily-upgrade.timer", # the timers may start the daily update, they need to be disabled, but it wont apply until after reboot. stop will also not resolve this.
     ]
   }
   provisioner "local-exec" {
@@ -256,8 +254,8 @@ EOT
       "ls /usr/bin/*ython*",
       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
       "test=$(which python2.7); if [[ $test != '/usr/bin/python2.7' ]]; then echo 'failed to use /usr/bin/python2.7'; fi",
-      "sudo systemctl enable apt-daily.timer", # enable again to allow updates
-      "sudo systemctl enable apt-daily-upgrade.timer",
+      # "sudo systemctl enable apt-daily.timer", # enable again to allow updates
+      # "sudo systemctl enable apt-daily-upgrade.timer",
       "echo '...Finished bootstrapping'",
     ]
   }
