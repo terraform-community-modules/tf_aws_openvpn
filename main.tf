@@ -353,6 +353,9 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 
 output "id" {
   value = local.id
+  depends_on = [
+    null_resource.provision_vpn
+  ]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
@@ -363,6 +366,9 @@ output "id" {
 
 output "private_ip" {
   value = local.private_ip
+  depends_on = [
+    null_resource.provision_vpn
+  ]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
@@ -373,6 +379,9 @@ output "private_ip" {
 
 output "public_ip" {
   value = local.public_ip
+  depends_on = [
+    null_resource.provision_vpn
+  ]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
