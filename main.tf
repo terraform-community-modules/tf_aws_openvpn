@@ -130,6 +130,20 @@ USERDATA
 
 }
 
+#configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
+#it must reside in the aws_eip resource to be able to establish a connection
+
+resource "aws_eip" "openvpnip" {
+  count = var.create_vpn ? 1 : 0
+  vpc      = true
+  instance = aws_instance.openvpn[count.index].id
+  depends_on = [aws_instance.openvpn]
+
+  tags = {
+    role = "vpn"
+  }
+}
+
 #wakeup a node after sleep
 resource "null_resource" "start-node" {
   count = ( ! var.sleep && var.create_vpn ) ? 1 : 0
@@ -153,18 +167,7 @@ EOT
   }
 }
 
-#configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
-#it must reside in the aws_eip resource to be able to establish a connection
 
-resource "aws_eip" "openvpnip" {
-  count = var.create_vpn ? 1 : 0
-  vpc      = true
-  instance = aws_instance.openvpn[count.index].id
-
-  tags = {
-    role = "vpn"
-  }
-}
 
 locals {
   private_ip = "${element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)}"
