@@ -149,7 +149,6 @@ resource "null_resource" "start-node" {
   count = ( ! var.sleep && var.create_vpn ) ? 1 : 0
 
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       aws ec2 start-instances --instance-ids ${aws_instance.openvpn[count.index].id} 
       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=restarted"
@@ -161,7 +160,6 @@ resource "null_resource" "shutdownvpn" {
   count = var.sleep && var.create_vpn ? 1 : 0
 
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       aws ec2 stop-instances --instance-ids ${aws_instance.openvpn[count.index].id} 
       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=stopped"
@@ -231,7 +229,6 @@ resource "null_resource" "provision_vpn" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
       set -x
@@ -257,7 +254,6 @@ EOT
 
 
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
       set -x
@@ -285,7 +281,6 @@ EOT
     ]
   }
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
       set -x
