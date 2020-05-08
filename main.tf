@@ -254,13 +254,10 @@ EOT
     ]
   }
 
-
-
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
-      set -x
       cd /deployuser
       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_vpn=true"; exit_test
       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"; exit_test
@@ -278,17 +275,13 @@ EOT
       timeout     = "10m"
     }
     inline = [
-      "set -x",
       "echo 'instance up'",
-      # "until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done"
-      # "sudo apt-get -y install python",
     ]
   }
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
-      set -x
       echo "environment vars in this case seem to need to be pushed via the shell"
       echo "TF_VAR_remote_subnet_cidr: $TF_VAR_remote_subnet_cidr"
       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
