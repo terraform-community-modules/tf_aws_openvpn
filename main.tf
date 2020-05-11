@@ -236,7 +236,7 @@ resource "null_resource" "provision_vpn" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
-      set -x
+      # set -x
       cd /deployuser
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
 EOT
@@ -250,7 +250,7 @@ EOT
       type    = "ssh"
       timeout = "10m"
     }
-    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
+    #inline = ["# set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "echo 'instance up'",
     ]
