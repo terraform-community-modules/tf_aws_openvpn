@@ -112,7 +112,7 @@ resource "aws_instance" "openvpn" {
   ami               = var.ami
   instance_type     = var.instance_type
   key_name          = var.key_name
-  subnet_id         = element(var.public_subnet_ids, 0)
+  subnet_id     = element(concat(var.public_subnet_ids, list("")), 0)
   source_dest_check = var.source_dest_check
 
   vpc_security_group_ids = [local.security_group_id]
@@ -236,7 +236,7 @@ resource "null_resource" "provision_vpn" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
-      set -x
+      # set -x
       cd /deployuser
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
 EOT
@@ -250,7 +250,7 @@ EOT
       type    = "ssh"
       timeout = "10m"
     }
-    #inline = ["set -x && sleep 60 && sudo apt-get -y install python"]
+    #inline = ["# set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "echo 'instance up'",
     ]
