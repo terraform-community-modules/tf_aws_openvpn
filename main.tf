@@ -216,7 +216,7 @@ resource "null_resource" "provision_vpn" {
     }
     # this resolves update issue https://unix.stackexchange.com/questions/315502/how-to-disable-apt-daily-service-on-ubuntu-cloud-vm-image
     inline = [
-      "set -x",
+      "set -x; export SHOWCOMMANDS=true",
       "echo 'instance up'",
       "lsb_release -a",
       "ps aux | grep [a]pt",
@@ -236,7 +236,7 @@ resource "null_resource" "provision_vpn" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       . /vagrant/scripts/exit_test.sh
-      set -x
+      set -x; export SHOWCOMMANDS=true
       cd /deployuser
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
 EOT
@@ -250,7 +250,6 @@ EOT
       type    = "ssh"
       timeout = "10m"
     }
-    #inline = ["# set -x && sleep 60 && sudo apt-get -y install python"]
     inline = [
       "echo 'instance up'",
     ]
