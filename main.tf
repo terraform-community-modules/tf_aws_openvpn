@@ -205,7 +205,7 @@ resource "null_resource" "provision_vpn" {
     vpn_address = local.vpn_address
   }
 
-### START this segment is termporary to deal with a cloud init bug
+  ### START this segment is termporary to deal with a cloud init bug
   provisioner "remote-exec" {
     connection {
       user = var.openvpn_admin_user
