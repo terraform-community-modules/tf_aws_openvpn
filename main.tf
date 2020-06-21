@@ -111,7 +111,7 @@ resource "aws_instance" "openvpn" {
   depends_on        = [null_resource.gateway_dependency, null_resource.bastion_dependency]
   ami               = var.ami
   instance_type     = var.instance_type
-  key_name          = var.key_name
+  key_name          = var.aws_key_name
   subnet_id     = element(concat(var.public_subnet_ids, list("")), 0)
   source_dest_check = var.source_dest_check
 
@@ -261,9 +261,9 @@ EOT
       . /vagrant/scripts/exit_test.sh
       cd /deployuser
       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_vpn=true"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"; exit_test
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_aws_private_key_path"; exit_test
       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"; exit_test
-      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_local_key_path"; exit_test
+      ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_aws_private_key_path"; exit_test
       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 30
 EOT
   }

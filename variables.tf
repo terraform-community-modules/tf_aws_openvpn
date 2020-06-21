@@ -24,7 +24,7 @@ variable "public_subnet_ids" {
 variable "cert_arn" {
 }
 
-variable "key_name" {
+variable "aws_key_name" {
 }
 
 variable "bastion_ip" {
@@ -33,7 +33,7 @@ variable "bastion_ip" {
 variable "private_key" {
 }
 
-variable "local_key_path" {
+variable "aws_private_key_path" {
 }
 
 variable "ami" {

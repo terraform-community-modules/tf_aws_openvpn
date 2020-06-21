@@ -100,7 +100,7 @@ module "openvpn" {
   vpc_cidr           = "${var.vpc_cidr}"
   public_subnet_ids  = "${var.public_subnet_ids}"
   # EC2 Inputs
-  key_name           = "${var.key_name}"
+  key_name           = "${var.aws_key_name}"
   private_key        = "${var.private_key}"
   ami                = "${var.ami}"
   instance_type      = "${var.instance_type}"
