@@ -106,10 +106,83 @@ resource "null_resource" "bastion_dependency" {
   }
 }
 
+data "aws_ami_ids" "centos_v7" {
+  owners = ["679593333241"] # the softnas account id
+  filter {
+    name   = "description"
+    values = ["OpenVPN Access Server 2.7.5"]
+  }
+}
+
+variable "allow_prebuilt_openvpn_access_server_ami" {
+  default = false
+}
+
+variable "openvpn_access_server_ami_option" { # Where multiple data aws_ami_ids queries are available, this allows us to select one.
+  default = "centos_v7"
+}
+
+locals {
+  keys = ["centos_v7"] # Where multiple data aws_ami_ids queries are available, this is the full list of options.
+  empty_list = list("")
+  values = ["${element( concat(data.aws_ami_ids.centos_v7.ids, local.empty_list ), 0 )}"] # the list of ami id's
+  openvpn_access_server_consumption_map = zipmap( local.keys , local.values )
+}
+
+locals { # select the found ami to use based on the map lookup
+  base_ami = lookup(local.openvpn_access_server_consumption_map, var.openvpn_access_server_ami_option)
+}
+
+data "aws_ami_ids" "prebuilt_openvpn_access_server_ami_list" { # search for a prebuilt tagged ami with the same base image.  if there is a match, it can be used instead, allowing us to skip provisioning.
+  owners = ["self"]
+  filter {
+    name   = "tag:base_ami"
+    values = ["${local.base_ami}"]
+  }
+  filter {
+    name = "name"
+    values = ["openvpn_access_server_prebuilt_*"]
+  }
+}
+
+locals {
+  prebuilt_openvpn_access_server_ami_list = data.aws_ami_ids.prebuilt_openvpn_access_server_ami_list.ids
+  first_element = element( data.aws_ami_ids.prebuilt_openvpn_access_server_ami_list.*.ids, 0)
+  mod_list = concat( local.prebuilt_openvpn_access_server_ami_list , list("") )
+  aquired_ami      = "${element( local.mod_list , 0)}" # aquired ami will use the ami in the list if found, otherwise it will default to the original ami.
+  use_prebuilt_openvpn_access_server_ami = var.allow_prebuilt_openvpn_access_server_ami && length(local.mod_list) > 1 ? true : false
+  ami = local.use_prebuilt_openvpn_access_server_ami ? local.aquired_ami : local.base_ami
+}
+
+output "base_ami" {
+  value = local.base_ami
+}
+
+output "prebuilt_openvpn_access_server_ami_list" {
+  value = local.prebuilt_openvpn_access_server_ami_list
+}
+
+output "first_element" {
+  value = local.first_element
+}
+
+output "aquired_ami" {
+  value = local.aquired_ami
+}
+
+output "use_prebuilt_openvpn_access_server_ami" {
+  value = local.use_prebuilt_openvpn_access_server_ami
+}
+
+output "ami" {
+  value = local.ami
+}
+
 resource "aws_instance" "openvpn" {
   count = var.create_vpn ? 1 : 0
   depends_on        = [null_resource.gateway_dependency, null_resource.bastion_dependency]
-  ami               = var.ami
+  # ami               = var.ami
+  ami               = local.ami
   instance_type     = var.instance_type
   key_name          = var.aws_key_name
   subnet_id     = element(concat(var.public_subnet_ids, list("")), 0)
