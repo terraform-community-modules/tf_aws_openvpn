@@ -106,11 +106,15 @@ resource "null_resource" "bastion_dependency" {
   }
 }
 
-data "aws_ami_ids" "centos_v7" {
-  owners = ["679593333241"] # the softnas account id
+# These filters below aquire the ami for your region.  If they are not working in your region try running:
+# aws ec2 describe-images --filters "Name=name,Values=OpenVPN Access Server 2.7.5-*"
+# ... and update the filters appropriately
+# We dont use image id's directly because they dont work in multiple regions.
+data "aws_ami_ids" "openvpn_2_7_5" {
+  owners = ["679593333241"] # the account id
   filter {
-    name   = "description"
-    values = ["OpenVPN Access Server 2.7.5*"]
+    name   = "name"
+    values = ["OpenVPN Access Server 2.7.5-*-ami-0c56f53c16ad84dcd.4"] # the * replaces part of the serial that varies by region.
   }
 }
 
@@ -119,13 +123,13 @@ variable "allow_prebuilt_openvpn_access_server_ami" {
 }
 
 variable "openvpn_access_server_ami_option" { # Where multiple data aws_ami_ids queries are available, this allows us to select one.
-  default = "centos_v7"
+  default = "openvpn_2_7_5"
 }
 
 locals {
-  keys = ["centos_v7"] # Where multiple data aws_ami_ids queries are available, this is the full list of options.
+  keys = ["openvpn_2_7_5"] # Where multiple data aws_ami_ids queries are available, this is the full list of options.
   empty_list = list("")
-  values = ["${element( concat(data.aws_ami_ids.centos_v7.ids, local.empty_list ), 0 )}"] # the list of ami id's
+  values = ["${element( concat(data.aws_ami_ids.openvpn_2_7_5.ids, local.empty_list ), 0 )}"] # the list of ami id's
   openvpn_access_server_consumption_map = zipmap( local.keys , local.values )
 }
 
