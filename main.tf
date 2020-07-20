@@ -112,7 +112,9 @@ resource "null_resource" "bastion_dependency" {
 # aws ec2 describe-images --filters "Name=name,Values=OpenVPN Access Server 2.7.5-*"
 # ... and update the filters appropriately
 # We dont use image id's directly because they dont work in multiple regions.
+
 data "aws_ami" "openvpn_2_7_5" {
+  # aws_ami function with most_recent is best when seeking a single ami, like the latest version from filters known to produce output.
   count = 1
   most_recent      = true
   owners = ["679593333241"] # the account id
@@ -142,6 +144,7 @@ locals { # select the found ami to use based on the map lookup
 }
 
 data "aws_ami_ids" "prebuilt_openvpn_access_server_ami_list" { # search for a prebuilt tagged ami with the same base image.  if there is a match, it can be used instead, allowing us to skip provisioning.
+  # aws_ami_ids function produces a list matching the filters.
   owners = ["self"]
   filter {
     name   = "tag:base_ami"
