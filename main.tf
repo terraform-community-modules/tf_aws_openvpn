@@ -107,6 +107,8 @@ resource "null_resource" "bastion_dependency" {
 }
 
 # These filters below aquire the ami for your region.  If they are not working in your region try running:
+# aws ec2 describe-images --image-ids {image id}
+# and then progress to filtering from that information instead of the image id:
 # aws ec2 describe-images --filters "Name=name,Values=OpenVPN Access Server 2.7.5-*"
 # ... and update the filters appropriately
 # We dont use image id's directly because they dont work in multiple regions.
