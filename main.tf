@@ -113,6 +113,7 @@ resource "null_resource" "bastion_dependency" {
 # ... and update the filters appropriately
 # We dont use image id's directly because they dont work in multiple regions.
 data "aws_ami_ids" "openvpn_2_7_5" {
+  most_recent      = true
   owners = ["679593333241"] # the account id
   filter {
     name   = "name"
