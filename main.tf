@@ -113,6 +113,7 @@ resource "null_resource" "bastion_dependency" {
 # ... and update the filters appropriately
 # We dont use image id's directly because they dont work in multiple regions.
 data "aws_ami" "openvpn_2_7_5" {
+  count = 1
   most_recent      = true
   owners = ["679593333241"] # the account id
   filter {
@@ -132,7 +133,7 @@ variable "openvpn_access_server_ami_option" { # Where multiple data aws_ami quer
 locals {
   keys = ["openvpn_2_7_5"] # Where multiple data aws_ami queries are available, this is the full list of options.
   empty_list = list("")
-  values = ["${element( concat(data.aws_ami.openvpn_2_7_5.ids, local.empty_list ), 0 )}"] # the list of ami id's
+  values = ["${element( concat(data.aws_ami.openvpn_2_7_5.*.id, local.empty_list ), 0 )}"] # the list of ami id's
   openvpn_access_server_consumption_map = zipmap( local.keys , local.values )
 }
 
@@ -141,6 +142,7 @@ locals { # select the found ami to use based on the map lookup
 }
 
 data "aws_ami" "prebuilt_openvpn_access_server_ami_list" { # search for a prebuilt tagged ami with the same base image.  if there is a match, it can be used instead, allowing us to skip provisioning.
+  count = 1
   owners = ["self"]
   filter {
     name   = "tag:base_ami"
@@ -153,8 +155,8 @@ data "aws_ami" "prebuilt_openvpn_access_server_ami_list" { # search for a prebui
 }
 
 locals {
-  prebuilt_openvpn_access_server_ami_list = data.aws_ami.prebuilt_openvpn_access_server_ami_list.ids
-  first_element = element( data.aws_ami.prebuilt_openvpn_access_server_ami_list.*.ids, 0)
+  prebuilt_openvpn_access_server_ami_list = data.aws_ami.prebuilt_openvpn_access_server_ami_list.*.id
+  first_element = element( data.aws_ami.prebuilt_openvpn_access_server_ami_list.*.id, 0)
   mod_list = concat( local.prebuilt_openvpn_access_server_ami_list , list("") )
   aquired_ami      = "${element( local.mod_list , 0)}" # aquired ami will use the ami in the list if found, otherwise it will default to the original ami.
   use_prebuilt_openvpn_access_server_ami = var.allow_prebuilt_openvpn_access_server_ami && length(local.mod_list) > 1 ? true : false
