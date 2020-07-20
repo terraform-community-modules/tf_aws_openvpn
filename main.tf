@@ -110,7 +110,7 @@ data "aws_ami_ids" "centos_v7" {
   owners = ["679593333241"] # the softnas account id
   filter {
     name   = "description"
-    values = ["OpenVPN Access Server 2.7.5"]
+    values = ["OpenVPN Access Server 2.7.5*"]
   }
 }
 
