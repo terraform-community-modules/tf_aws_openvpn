@@ -118,10 +118,15 @@ data "aws_ami" "openvpn_2_8" {
   count = 1
   most_recent      = true
   owners = ["679593333241"] # The account id
+  
   filter {
     name   = "description"
-    # values = ["OpenVPN Access Server 2.7.5-*-ami-0c56f53c16ad84dcd.4"] # the * replaces part of the serial that varies by region.
-    values = ["OpenVPN Access Server 2.8.* publisher image from https://www.openvpn.net/*"] # The * replaces part of the serial that varies by region.
+    values = ["OpenVPN Access Server 2.8.3 publisher image from https://www.openvpn.net/."] # The * replaces part of the serial that varies by region.
+  }
+
+  filter {
+    name   = "product-code"
+    values = "f2ew2wrz425a1jagnifd02u5t"
   }
 }
 
