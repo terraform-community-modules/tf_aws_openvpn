@@ -294,9 +294,16 @@ resource "aws_route53_record" "openvpn_record" {
   records = [local.public_ip]
 }
 
+variable "firehawk_init_dependency" {}
+resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
+  triggers = {
+    firehawk_init_dependency = var.firehawk_init_dependency
+  }
+}
+
 resource "null_resource" "provision_vpn" {
   count = var.create_vpn ? 1 : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
 
   triggers = {
     instanceid = local.id
