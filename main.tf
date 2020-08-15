@@ -303,6 +303,17 @@ resource "null_resource" "provision_vpn" {
     # If the address changes, the vpn must be provisioned again.
     vpn_address = local.vpn_address
   }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command = <<EOT
+      . /vagrant/scripts/exit_test.sh
+      export SHOWCOMMANDS=true; set -x
+      cd /deployuser
+      sleep 60 # local wait until instance can be logged into
+EOT
+  }
+
   provisioner "remote-exec" {
     connection {
       user = var.openvpn_admin_user
