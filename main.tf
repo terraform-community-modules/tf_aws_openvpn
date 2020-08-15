@@ -327,7 +327,7 @@ resource "null_resource" "provision_vpn" {
       "ls /usr/bin/*ython*",
       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
       "test=$(which python2.7); if [ \"$test\" != '/usr/bin/python2.7' ]; then echo 'failed to use /usr/bin/python2.7'; fi",
-      "sudo chown openvpnas:openvpnas /home/openvpnas" # This must be a bug with 2.8.5 open vpn ami.
+      "sudo chown openvpnas:openvpnas /home/openvpnas", # This must be a bug with 2.8.5 open vpn ami.
       "echo '...Finished bootstrapping'",
     ]
   }
