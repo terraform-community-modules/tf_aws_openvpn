@@ -55,6 +55,13 @@ resource "aws_security_group" "openvpn" {
     description = "admin ui"
   }
   ingress {
+    protocol    = "tcp"
+    from_port   = 945
+    to_port     = 945
+    cidr_blocks = [var.remote_vpn_ip_cidr]
+    description = "admin ui"
+  }
+  ingress {
     protocol    = "udp"
     from_port   = 1194
     to_port     = 1194
