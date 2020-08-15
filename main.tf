@@ -425,9 +425,13 @@ EOT
         ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v -v --extra-vars "variable_host=workstation1 variable_user=deployuser hostname=workstation1 ansible_ssh_private_key_file=$TF_VAR_onsite_workstation_private_ssh_key ethernet_interface=$TF_VAR_workstation_ethernet_interface"; exit_test
       fi
 
+      sleep 30
+
       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-restart-client.yaml
 
-      sleep 30; /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
+      sleep 30
+      
+      /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
 EOT
   }
 }
