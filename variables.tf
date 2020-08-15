@@ -36,9 +36,6 @@ variable "private_key" {
 variable "aws_private_key_path" {
 }
 
-variable "ami" {
-}
-
 variable "instance_type" {
 }
 
