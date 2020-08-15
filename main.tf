@@ -303,6 +303,18 @@ resource "null_resource" "provision_vpn" {
     # If the address changes, the vpn must be provisioned again.
     vpn_address = local.vpn_address
   }
+  provisioner "remote-exec" {
+    connection {
+      user = var.openvpn_admin_user
+      host = local.public_ip
+      private_key = var.private_key
+      type    = "ssh"
+      timeout = "10m"
+    }
+    inline = [
+      "echo 'instance up'", # test connection
+    ]
+  }
 
   ### START this segment is termporary to deal with a cloud init bug
   provisioner "remote-exec" {
@@ -316,7 +328,6 @@ resource "null_resource" "provision_vpn" {
     # this resolves update issue https://unix.stackexchange.com/questions/315502/how-to-disable-apt-daily-service-on-ubuntu-cloud-vm-image
     inline = [
       "export SHOWCOMMANDS=true; set -x",
-      "echo 'instance up'",
       "lsb_release -a",
       "ps aux | grep [a]pt",
       "sudo cat /etc/systemd/system.conf",
