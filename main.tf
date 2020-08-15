@@ -113,15 +113,15 @@ resource "null_resource" "bastion_dependency" {
 # ... and update the filters appropriately
 # We dont use image id's directly because they dont work in multiple regions.
 
-data "aws_ami" "openvpn_2_8_5" {
+data "aws_ami" "openvpn_2_8" {
   # aws_ami function with most_recent is best when seeking a single ami, like the latest version from filters known to produce output.
   count = 1
   most_recent      = true
-  owners = ["679593333241"] # the account id
+  owners = ["679593333241"] # The account id
   filter {
-    name   = "name"
+    name   = "description"
     # values = ["OpenVPN Access Server 2.7.5-*-ami-0c56f53c16ad84dcd.4"] # the * replaces part of the serial that varies by region.
-    values = ["OpenVPN Access Server 2.8.5-*"] # The * replaces part of the serial that varies by region.
+    values = ["OpenVPN Access Server 2.8.* publisher image from https://www.openvpn.net/*"] # The * replaces part of the serial that varies by region.
   }
 }
 
@@ -130,13 +130,13 @@ variable "allow_prebuilt_openvpn_access_server_ami" {
 }
 
 variable "openvpn_access_server_ami_option" { # Where multiple data aws_ami queries are available, this allows us to select one.
-  default = "openvpn_2_8_5"
+  default = "openvpn_2_8"
 }
 
 locals {
-  keys = ["openvpn_2_8_5"] # Where multiple data aws_ami queries are available, this is the full list of options.
+  keys = ["openvpn_2_8"] # Where multiple data aws_ami queries are available, this is the full list of options.
   empty_list = list("")
-  values = ["${element( concat(data.aws_ami.openvpn_2_8_5.*.id, local.empty_list ), 0 )}"] # the list of ami id's
+  values = ["${element( concat(data.aws_ami.openvpn_2_8.*.id, local.empty_list ), 0 )}"] # the list of ami id's
   openvpn_access_server_consumption_map = zipmap( local.keys , local.values )
 }
 
