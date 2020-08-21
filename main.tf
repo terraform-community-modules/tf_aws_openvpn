@@ -408,6 +408,7 @@ EOT
     }
     inline = [
       "echo 'instance up'",
+      "sudo apt-get -y clean && sudo apt-get -y autoclean",
     ]
   }
   provisioner "local-exec" {
