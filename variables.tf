@@ -79,3 +79,5 @@ variable "bastion_dependency" {}
 
 variable "private_route_table_ids" {}
 variable "public_route_table_ids" {}
+
+variable "private_domain_name" {}

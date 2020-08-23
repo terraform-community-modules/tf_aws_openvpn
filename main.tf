@@ -421,7 +421,7 @@ EOT
       echo "private_subnet1: ${element(var.private_subnets, 0)}"
       echo "public_subnet1: ${element(var.public_subnets, 0)}"
       set -x
-      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "vpn_address=${local.vpn_address} private_ip=${local.private_ip} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
+      ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "vpn_address=${local.vpn_address} private_domain_name=${var.private_domain_name} private_ip=${local.private_ip} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
       ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v --extra-vars "variable_host=ansible_control variable_user=deployuser hostname=ansible_control ethernet_interface=eth1" # configure routes for ansible control to the gateway to test the connection
 
       if [[ "$TF_VAR_set_routes_on_workstation" = "true" ]]; then # Intended for a dev envoronment only where multiple parralel deployments may occur, we cant provision a router for each subnet
