@@ -270,8 +270,6 @@ EOT
   }
 }
 
-
-
 locals {
   private_ip = "${element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)}"
   public_ip = "${element(concat(aws_eip.openvpnip.*.public_ip, list("")), 0)}"
