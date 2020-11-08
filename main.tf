@@ -329,6 +329,7 @@ EOT
     }
     inline = [
       "echo 'instance up'", # test connection
+      "set -x && sudo yum install -y python python3" # this line is only required if not included in the ami already
     ]
   }
 
