@@ -21,8 +21,8 @@ variable "public_subnet_ids" {
   default = []
 }
 
-variable "cert_arn" {
-}
+# variable "cert_arn" {
+# }
 
 variable "aws_key_name" {
 }
@@ -39,11 +39,11 @@ variable "bastion_ip" {
   default = "none"
 }
 
-variable "private_key" {
-}
+# variable "private_key" {
+# }
 
-variable "aws_private_key_path" {
-}
+# variable "aws_private_key_path" {
+# }
 
 variable "instance_type" {
 }

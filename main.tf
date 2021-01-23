@@ -292,22 +292,22 @@ resource "aws_route53_record" "openvpn_record" {
   records = [local.public_ip]
 }
 
-variable "firehawk_init_dependency" {}
-resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
-  triggers = {
-    firehawk_init_dependency = var.firehawk_init_dependency
-  }
-}
+# variable "firehawk_init_dependency" {}
+# resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
+#   triggers = {
+#     firehawk_init_dependency = var.firehawk_init_dependency
+#   }
+# }
 
-resource "null_resource" "provision_vpn" {
-  count = var.create_vpn ? 1 : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
+# resource "null_resource" "provision_vpn" {
+#   count = var.create_vpn ? 1 : 0
+#   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
 
-  triggers = {
-    instanceid = local.id
-    # If the address changes, the vpn must be provisioned again.
-    vpn_address = local.vpn_address
-  }
+#   triggers = {
+#     instanceid = local.id
+#     # If the address changes, the vpn must be provisioned again.
+#     vpn_address = local.vpn_address
+#   }
 
 #   provisioner "local-exec" {
 #     interpreter = ["/bin/bash", "-c"]
@@ -319,18 +319,18 @@ resource "null_resource" "provision_vpn" {
 # EOT
 #   }
 
-  provisioner "remote-exec" {
-    connection {
-      user = var.openvpn_admin_user
-      host = local.public_ip
-      private_key = var.private_key
-      type    = "ssh"
-      timeout = "10m"
-    }
-    inline = [
-      "echo 'instance up'", # test connection
-    ]
-  }
+  # provisioner "remote-exec" {
+  #   connection {
+  #     user = var.openvpn_admin_user
+  #     host = local.public_ip
+  #     private_key = var.private_key
+  #     type    = "ssh"
+  #     timeout = "10m"
+  #   }
+  #   inline = [
+  #     "echo 'instance up'", # test connection
+  #   ]
+  # }
 
 #   ### START this segment is termporary to deal with a cloud init bug
 #   provisioner "remote-exec" {
@@ -431,7 +431,7 @@ resource "null_resource" "provision_vpn" {
 #       /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
 # EOT
 #   }
-}
+# }
 
 variable "start_vpn" {
   default = true
