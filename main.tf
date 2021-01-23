@@ -291,8 +291,6 @@ resource "aws_route53_record" "openvpn_record" {
   ttl     = 300
   records = [local.public_ip]
 }
-
-variable "firehawk_init_dependency" {}
 resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
   triggers = {
     firehawk_init_dependency = var.firehawk_init_dependency
