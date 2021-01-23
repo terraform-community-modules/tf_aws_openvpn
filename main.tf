@@ -431,7 +431,7 @@ EOT
 #       /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
 # EOT
 #   }
-# }
+}
 
 variable "start_vpn" {
   default = true
