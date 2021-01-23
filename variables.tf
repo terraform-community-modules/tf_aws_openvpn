@@ -106,6 +106,10 @@ variable "bastion_dependency" {
   default = "None"
 }
 
+variable "firehawk_init_dependency" {
+  default = "None"
+}
+
 variable "private_route_table_ids" {}
 variable "public_route_table_ids" {}
 

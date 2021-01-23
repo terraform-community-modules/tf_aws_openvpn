@@ -292,16 +292,16 @@ resource "aws_route53_record" "openvpn_record" {
   records = [local.public_ip]
 }
 
-# variable "firehawk_init_dependency" {}
-# resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
-#   triggers = {
-#     firehawk_init_dependency = var.firehawk_init_dependency
-#   }
-# }
+variable "firehawk_init_dependency" {}
+resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk gateway has finished being prrovisioned because the next process may interupt its network connection
+  triggers = {
+    firehawk_init_dependency = var.firehawk_init_dependency
+  }
+}
 
-# resource "null_resource" "provision_vpn" {
-#   count = var.create_vpn ? 1 : 0
-#   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
+resource "null_resource" "provision_vpn" {
+  count = var.create_vpn ? 1 : 0
+  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
 
 #   triggers = {
 #     instanceid = local.id
@@ -309,15 +309,15 @@ resource "aws_route53_record" "openvpn_record" {
 #     vpn_address = local.vpn_address
 #   }
 
-#   provisioner "local-exec" {
-#     interpreter = ["/bin/bash", "-c"]
-#     command = <<EOT
-#       . /vagrant/scripts/exit_test.sh
-#       export SHOWCOMMANDS=true; set -x
-#       cd /deployuser
-#       # sleep 60 # local wait until instance can be logged into
-# EOT
-#   }
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command = <<EOT
+      . /vagrant/scripts/exit_test.sh
+      export SHOWCOMMANDS=true; set -x
+      cd /deployuser
+      # sleep 60 # local wait until instance can be logged into
+EOT
+  }
 
   # provisioner "remote-exec" {
   #   connection {
