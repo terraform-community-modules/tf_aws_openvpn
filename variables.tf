@@ -27,7 +27,16 @@ variable "cert_arn" {
 variable "aws_key_name" {
 }
 
+variable "use_bastion" {
+  description = "If enabled, will open ssh ports to a bastion host for provisioning.  This shouldn't be required if provisioning via private subnet."
+  type = bool
+  default = false
+}
+
 variable "bastion_ip" {
+  description = "The IP address of the bastion for access"
+  type = string
+  default = "none"
 }
 
 variable "private_key" {
@@ -43,12 +52,30 @@ variable "openvpn_user" {
 }
 
 variable "openvpn_user_pw" {
+  description = "The user password used to login to Open VPN Access Server."
+  type = string
+  validation {
+    condition = (
+      length(var.openvpn_user_pw) >= 8
+    )
+    error_message = "The openvpn_user_pw configured in vault must be at least 8 characters in length."
+  }
 }
 
 variable "openvpn_admin_user" {
+  description = "The admin user name used to configure OpenVPN Access Server"
+  default = "openvpnas"
 }
 
 variable "openvpn_admin_pw" {
+  description = "The admin password used to login to Open VPN Access Server."
+  type = string
+  validation {
+    condition = (
+      length(var.openvpn_admin_pw) >= 8
+    )
+    error_message = "The openvpn_admin_pw configured in vault must be at least 8 characters in length."
+  }
 }
 
 variable "vpn_cidr" {
@@ -75,7 +102,9 @@ variable "public_subnets" {
   default = []
 }
 
-variable "bastion_dependency" {}
+variable "bastion_dependency" {
+  default = "None"
+}
 
 variable "private_route_table_ids" {}
 variable "public_route_table_ids" {}
