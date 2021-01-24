@@ -251,7 +251,7 @@ resource "null_resource" "start-node" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       # . /vagrant/scripts/exit_test.sh
-      aws ec2 start-instances --instance-ids ${aws_instance.openvpn[count.index].id}; exit_test
+      aws ec2 start-instances --instance-ids ${aws_instance.openvpn[count.index].id}
       # ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=restarted"; exit_test
 EOT
   }
@@ -264,7 +264,7 @@ resource "null_resource" "shutdownvpn" {
     interpreter = ["/bin/bash", "-c"]
     command = <<EOT
       # . /vagrant/scripts/exit_test.sh
-      aws ec2 stop-instances --instance-ids ${aws_instance.openvpn[count.index].id}; exit_test
+      aws ec2 stop-instances --instance-ids ${aws_instance.openvpn[count.index].id}
       # ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=stopped"; exit_test
 EOT
   }
