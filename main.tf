@@ -7,7 +7,7 @@
 variable "common_tags" {}
 locals {
   extra_tags = {
-    role = "vpn"
+    role  = "vpn"
     route = "public"
   }
 }
@@ -203,14 +203,16 @@ resource "null_resource" "bastion_dependency" {
 # }
 
 resource "aws_instance" "openvpn" {
-  count = var.create_vpn ? 1 : 0
-  depends_on        = [null_resource.gateway_dependency, null_resource.bastion_dependency]
-  ami               = var.ami
+  count      = var.create_vpn ? 1 : 0
+  depends_on = [null_resource.gateway_dependency, null_resource.bastion_dependency]
+  ami        = var.ami
   # ami               = local.ami
-  instance_type     = var.instance_type
-  key_name          = var.aws_key_name
-  subnet_id     = concat( sort(var.public_subnet_ids) , list("") )[0]
-  source_dest_check = var.source_dest_check
+  # needs VPNServerRole
+  iam_instance_profile = "VPNServerProfile"
+  instance_type        = var.instance_type
+  key_name             = var.aws_key_name
+  subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
+  source_dest_check    = var.source_dest_check
 
   vpc_security_group_ids = [local.security_group_id]
 
@@ -234,19 +236,19 @@ USERDATA
 #it must reside in the aws_eip resource to be able to establish a connection
 
 resource "aws_eip" "openvpnip" {
-  count = var.create_vpn ? 1 : 0
-  vpc      = true
-  instance = aws_instance.openvpn[count.index].id
+  count      = var.create_vpn ? 1 : 0
+  vpc        = true
+  instance   = aws_instance.openvpn[count.index].id
   depends_on = [aws_instance.openvpn]
 
   tags = merge(map("Name", format("%s", var.name)), var.common_tags, local.extra_tags)
-  
+
 }
 
 #wakeup a node after sleep
 
 locals {
-  startup = ( ! var.sleep && var.create_vpn ) ? 1 : 0
+  startup = (! var.sleep && var.create_vpn) ? 1 : 0
 }
 output "startup" {
   value = local.startup
@@ -256,7 +258,7 @@ resource "null_resource" "start-node" {
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
-    command = <<EOT
+    command     = <<EOT
       # . /vagrant/scripts/exit_test.sh
       aws ec2 start-instances --instance-ids ${aws_instance.openvpn[count.index].id}
       # ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=restarted"; exit_test
@@ -275,7 +277,7 @@ resource "null_resource" "shutdownvpn" {
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
-    command = <<EOT
+    command     = <<EOT
       # . /vagrant/scripts/exit_test.sh
       aws ec2 stop-instances --instance-ids ${aws_instance.openvpn[count.index].id}
       # ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-service.yaml -v --extra-vars "state=stopped"; exit_test
@@ -284,11 +286,11 @@ EOT
 }
 
 locals {
-  private_ip = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip = element(concat(aws_eip.openvpnip.*.public_ip, list("")), 0)
-  id = element(concat(aws_instance.openvpn.*.id, list("")), 0)
+  private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
+  public_ip         = element(concat(aws_eip.openvpnip.*.public_ip, list("")), 0)
+  id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
-  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":local.public_ip
+  vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
   # private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
   # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
 }
@@ -330,18 +332,18 @@ resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk
 # EOT
 #   }
 
-  # provisioner "remote-exec" {
-  #   connection {
-  #     user = var.openvpn_admin_user
-  #     host = local.public_ip
-  #     private_key = var.private_key
-  #     type    = "ssh"
-  #     timeout = "10m"
-  #   }
-  #   inline = [
-  #     "echo 'instance up'", # test connection
-  #   ]
-  # }
+# provisioner "remote-exec" {
+#   connection {
+#     user = var.openvpn_admin_user
+#     host = local.public_ip
+#     private_key = var.private_key
+#     type    = "ssh"
+#     timeout = "10m"
+#   }
+#   inline = [
+#     "echo 'instance up'", # test connection
+#   ]
+# }
 
 #   ### START this segment is termporary to deal with a cloud init bug
 #   provisioner "remote-exec" {
@@ -438,7 +440,7 @@ resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk
 #       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-restart-client.yaml
 
 #       sleep 30
-      
+
 #       /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
 # EOT
 #   }
@@ -451,7 +453,7 @@ variable "start_vpn" {
 # route tables to send traffic to the remote subnet are configured once the vpn is provisioned.
 
 resource "aws_route" "private_openvpn_remote_subnet_gateway" {
-  count = var.create_vpn ? length(var.private_route_table_ids) : 0
+  count      = var.create_vpn ? length(var.private_route_table_ids) : 0
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
@@ -464,7 +466,7 @@ resource "aws_route" "private_openvpn_remote_subnet_gateway" {
 }
 
 resource "aws_route" "public_openvpn_remote_subnet_gateway" {
-  count = var.create_vpn ? length(var.public_route_table_ids) : 0
+  count      = var.create_vpn ? length(var.public_route_table_ids) : 0
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
@@ -478,7 +480,7 @@ resource "aws_route" "public_openvpn_remote_subnet_gateway" {
 
 ### routes may be needed for traffic going back to open vpn dhcp adresses
 resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
-  count = var.create_vpn ? length(var.private_route_table_ids) : 0
+  count      = var.create_vpn ? length(var.private_route_table_ids) : 0
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
@@ -491,7 +493,7 @@ resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
 }
 
 resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
-  count = var.create_vpn ? length(var.public_route_table_ids) : 0
+  count      = var.create_vpn ? length(var.public_route_table_ids) : 0
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
@@ -504,7 +506,7 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 }
 
 output "id" {
-  value = local.id
+  value      = local.id
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
@@ -515,7 +517,7 @@ output "id" {
 }
 
 output "private_ip" {
-  value = local.private_ip
+  value      = local.private_ip
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
@@ -526,7 +528,7 @@ output "private_ip" {
 }
 
 output "public_ip" {
-  value = local.public_ip
+  value      = local.public_ip
   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
