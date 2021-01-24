@@ -14,6 +14,10 @@ variable "remote_vpn_ip_cidr" {
   default = "0.0.0.0/0"
 }
 
+variable "remote_ssh_ip_cidr" {
+  description = "The IP used to ssh to the access server for admin."
+}
+
 variable "remote_subnet_cidr" {
 }
 
