@@ -276,8 +276,8 @@ locals {
   id = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}":local.public_ip
-  private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
-  public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
+  # private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
+  # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
 }
 
 variable "route_public_domain_name" {
