@@ -209,7 +209,7 @@ resource "aws_instance" "openvpn" {
   # ami               = local.ami
   instance_type     = var.instance_type
   key_name          = var.aws_key_name
-  subnet_id     = sort( setunion(var.public_subnet_ids, list("")) )[0]
+  subnet_id     = concat( sort(var.public_subnet_ids, list("")) )[0]
   source_dest_check = var.source_dest_check
 
   vpc_security_group_ids = [local.security_group_id]
