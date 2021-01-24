@@ -244,8 +244,15 @@ resource "aws_eip" "openvpnip" {
 }
 
 #wakeup a node after sleep
+
+locals {
+  startup = ( ! var.sleep && var.create_vpn ) ? 1 : 0
+}
+output "startup" {
+  value = local.startup
+}
 resource "null_resource" "start-node" {
-  count = ( ! var.sleep && var.create_vpn ) ? 1 : 0
+  count = local.startup
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
@@ -257,8 +264,14 @@ EOT
   }
 }
 
+locals {
+  shutdown = var.sleep && var.create_vpn ? 1 : 0
+}
+output "shutdown" {
+  value = local.shutdown
+}
 resource "null_resource" "shutdownvpn" {
-  count = var.sleep && var.create_vpn ? 1 : 0
+  count = local.shutdown
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
