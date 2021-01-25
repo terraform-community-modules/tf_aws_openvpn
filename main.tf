@@ -225,11 +225,25 @@ resource "aws_instance" "openvpn" {
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
   # https://docs.openvpn.net/how-to-tutorialsguides/virtual-platforms/amazon-ec2-appliance-ami-quick-start-guide/
   # Python is required for Ansible to function.
-  user_data = <<USERDATA
-admin_user=${var.openvpn_admin_user}
-admin_pw=${var.openvpn_admin_pw}
-USERDATA
+  #   user_data = <<USERDATA
+  # admin_user=${var.openvpn_admin_user}
+  # admin_pw=${var.openvpn_admin_pw}
+  # USERDATA
 
+  user_data = data.template_file.user_data_auth_client.rendered
+
+}
+
+data "template_file" "user_data_auth_client" {
+  template = file("${path.module}/user-data-auth-client.sh")
+
+  vars = {
+    consul_cluster_tag_key   = var.consul_cluster_tag_key
+    consul_cluster_tag_value = var.consul_cluster_name
+    example_role_name        = var.example_role_name
+    openvpn_admin_user       = var.openvpn_admin_user
+    openvpn_admin_pw         = var.openvpn_admin_pw
+  }
 }
 
 #configuration of the vpn instance must occur after the eip is assigned.  normally a provisioner would want to reside in the aws_instance resource, but in this case,
