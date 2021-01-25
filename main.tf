@@ -243,6 +243,7 @@ data "template_file" "user_data_auth_client" {
     example_role_name        = var.example_role_name
     openvpn_admin_user       = var.openvpn_admin_user
     openvpn_admin_pw         = var.openvpn_admin_pw
+    resourcetier             = var.resourcetier
   }
 }
 
