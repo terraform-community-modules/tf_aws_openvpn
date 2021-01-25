@@ -1,5 +1,5 @@
 variable "example_role_name" {
-  description = "The name of the vault role"
+  description = "The name of the vault role. (Note: This is not the AWS role name.)"
   type        = string
   default     = "example-role"
 }

@@ -123,21 +123,23 @@ login_output=$(retry \
 #   }
 # }
 
-# We can then use the client token from this output
-token=$(echo $login_output | jq -r .auth.client_token)
+# # We can then use the client token from this output
+# token=$(echo $login_output | jq -r .auth.client_token)
 
-# And use the token to perform operations on vault such as reading a secret
-response=$(retry \
-  "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
-  "Trying to read secret from vault")
+# # And use the token to perform operations on vault such as reading a secret
+# response=$(retry \
+#   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
+#   "Trying to read secret from vault")
 
 # If vault cli is installed we can also perform these operations with vault cli
 # The necessary environment variables have to be set
 # export VAULT_TOKEN=$token
-# export VAULT_ADDR=https://vault.service.consul:8200
+export VAULT_ADDR=https://vault.service.consul:8200
 # /opt/vault/bin/vault read secret/example_gruntwork
+vault login -method=aws header_value=vault.service.consul role=${example_role_name}
+vault kv get /$resourcetier/files/usr/local/openvpn_as/scripts/seperate/ca.crt >> /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
-# Serves the answer in a web server so we can test that this auth client is
-# authenticating to vault and fetching data correctly
-echo $response | jq -r .data.the_answer > index.html
-python -m SimpleHTTPServer 8080 &
+# # Serves the answer in a web server so we can test that this auth client is
+# # authenticating to vault and fetching data correctly
+# echo $response | jq -r .data.the_answer > index.html
+# python -m SimpleHTTPServer 8080 &
