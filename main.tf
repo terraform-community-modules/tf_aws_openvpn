@@ -240,8 +240,19 @@ data "vault_aws_access_credentials" "creds" {
   role    = "vpn-server-vault-iam-creds-role"
 }
 
+resource "vault_token" "vpn_admin" {
+  # dynamically generate a token with constrained permisions for the vpn role.
+  role_name = "vpn-server-vault-token-creds-role"
+
+  policies = ["vpn_server"]
+
+  renewable = true
+  ttl = "600s"
+  period = "300s"
+}
+
 data "template_file" "user_data_auth_client" {
-  template = file("${path.module}/user-data-auth-client-aws-secret.sh")
+  template = file("${path.module}/user-data-auth-client-vault-token.sh")
 
   vars = {
     consul_cluster_tag_key   = var.consul_cluster_tag_key
@@ -250,8 +261,9 @@ data "template_file" "user_data_auth_client" {
     openvpn_admin_user       = var.openvpn_admin_user
     openvpn_admin_pw         = var.openvpn_admin_pw
     resourcetier             = var.resourcetier
-    aws_secret_access_key    = data.vault_aws_access_credentials.creds.access_key
-    aws_access_key_id        = data.vault_aws_access_credentials.creds.secret_key
+    # aws_secret_access_key    = data.vault_aws_access_credentials.creds.access_key
+    # aws_access_key_id        = data.vault_aws_access_credentials.creds.secret_key
+    vault_token = vault_token.vpn_admin.client_token
   }
 }
 
