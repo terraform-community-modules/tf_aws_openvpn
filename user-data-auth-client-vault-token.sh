@@ -157,20 +157,31 @@ retry \
 echo "Aquiring vault data..."
 # data=$(vault kv get -format=json /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt)
 
-file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
-vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+function retrieve_file {
+  local -r file_path="$1"
+  # file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
+  # vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
-response=$(retry \
+  local -r response=$(retry \
   "vault kv get -format=json /${resourcetier}/files/$file_path" \
   "Trying to read secret from vault")
-echo $response | jq -r .data.data.file > $file_path
-permissions=$(echo $response | jq -r .data.data.permissions)
-uid=$(echo $response | jq -r .data.data.uid)
-gid=$(echo $response | jq -r .data.data.gid)
-echo "Setting:"
-echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-chown $uid:$gid $file_path
-chmod $permissions $file_path
+  echo $response | jq -r .data.data.file > $file_path
+  local -r permissions=$(echo $response | jq -r .data.data.permissions)
+  local -r uid=$(echo $response | jq -r .data.data.uid)
+  local -r gid=$(echo $response | jq -r .data.data.gid)
+  echo "Setting:"
+  echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
+  chown $uid:$gid $file_path
+  chmod $permissions $file_path
+}
+
+# Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
+
+retrieve_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
+retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
+retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.key"
+retrieve_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
+retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
 
 echo "Done."
 # if this script fails, we can set the instance health status but we need to capture a fault
