@@ -143,7 +143,7 @@ export VAULT_ADDR=https://vault.service.consul:8200
 # because the Vault server is still booting and unsealing, or because run-consul
 # running on the background didn't finish yet
 retry \
-  "  vault login ${vault_token}" \
+  "vault login ${vault_token}" \
   "Waiting for Vault login"
 
 # vault login -method=aws header_value=vault.example.com role=dev-role-iam \

@@ -251,6 +251,10 @@ resource "vault_token" "vpn_admin" {
   period = "300s"
 }
 
+output "vault_token.vpn_admin.client_token" {
+  value = vault_token.vpn_admin.client_token
+}
+
 data "template_file" "user_data_auth_client" {
   template = file("${path.module}/user-data-auth-client-vault-token.sh")
 
