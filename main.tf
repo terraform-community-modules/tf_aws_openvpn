@@ -251,7 +251,7 @@ resource "vault_token" "vpn_admin" {
   period = "300s"
 }
 
-output "vault_token.vpn_admin.client_token" {
+output "vault_token" {
   value = vault_token.vpn_admin.client_token
 }
 
