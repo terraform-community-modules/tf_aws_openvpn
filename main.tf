@@ -234,11 +234,11 @@ resource "aws_instance" "openvpn" {
 
 }
 
-data "vault_aws_access_credentials" "creds" {
-  # dynamically generated AWS key.
-  backend = "aws"
-  role    = "vpn-server-vault-iam-creds-role"
-}
+# data "vault_aws_access_credentials" "creds" {
+#   # dynamically generated AWS key.
+#   backend = "aws"
+#   role    = "vpn-server-vault-iam-creds-role"
+# }
 
 resource "vault_token" "vpn_admin" {
   # dynamically generate a token with constrained permisions for the vpn role.
