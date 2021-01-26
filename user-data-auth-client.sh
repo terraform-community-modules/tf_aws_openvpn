@@ -144,14 +144,14 @@ export VAULT_ADDR=https://vault.service.consul:8200
 # running on the background didn't finish yet
 retry \
   "vault login -method=aws header_value=vault.service.consul role=${example_role_name}" \
-  "waiting for Vault login"
+  "Waiting for Vault login"
 
 # # We can then use the client token from the login output once login was successful
 # token=$(cat /opt/vault/data/vault-token)
 
 # /opt/vault/bin/vault read secret/example_gruntwork
 
-vault kv get /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+# vault kv get /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
 # # Serves the answer in a web server so we can test that this auth client is
 # # authenticating to vault and fetching data correctly
