@@ -234,8 +234,14 @@ resource "aws_instance" "openvpn" {
 
 }
 
+data "vault_aws_access_credentials" "creds" {
+  # dynamically generated AWS key.
+  backend = "aws"
+  role    = "vpn-server-vault-iam-creds-role"
+}
+
 data "template_file" "user_data_auth_client" {
-  template = file("${path.module}/user-data-auth-client.sh")
+  template = file("${path.module}/user-data-auth-client-aws-secret.sh")
 
   vars = {
     consul_cluster_tag_key   = var.consul_cluster_tag_key
@@ -244,6 +250,8 @@ data "template_file" "user_data_auth_client" {
     openvpn_admin_user       = var.openvpn_admin_user
     openvpn_admin_pw         = var.openvpn_admin_pw
     resourcetier             = var.resourcetier
+    aws_secret_access_key    = data.vault_aws_access_credentials.creds.access_key
+    aws_access_key_id        = data.vault_aws_access_credentials.creds.secret_key
   }
 }
 
