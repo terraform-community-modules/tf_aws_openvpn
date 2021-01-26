@@ -154,9 +154,25 @@ retry \
 # token=$(cat /opt/vault/data/vault-token)
 
 # /opt/vault/bin/vault read secret/example_gruntwork
+echo "Aquiring vault data..."
+# data=$(vault kv get -format=json /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt)
 
-vault kv get /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+# vault kv get -field=file /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
+file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
+response=$(retry \
+  "vault kv get -format=json /${resourcetier}/files/$file_path" \
+  "Trying to read secret from vault")
+echo $response | jq -r .data.file > $file_path
+permissions=$(echo $response | jq -r .data.permissions)
+uid=$(echo $response | jq -r .data.uid)
+gid=$(echo $response | jq -r .data.gid)
+echo "Setting:"
+echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
+chown $uid:$gid $file_path
+chmod $permissions $file_path
+
+echo "Done."
 # if this script fails, we can set the instance health status but we need to capture a fault
 # aws autoscaling set-instance-health --instance-id i-0b03e12682e74746e --health-status Unhealthy
 
