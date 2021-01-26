@@ -143,7 +143,7 @@ export VAULT_ADDR=https://vault.service.consul:8200
 # because the Vault server is still booting and unsealing, or because run-consul
 # running on the background didn't finish yet
 retry \
-  "vault login ${vault_token}" \
+  "vault login  --no-print ${vault_token}" \
   "Waiting for Vault login"
 
 # vault login -method=aws header_value=vault.example.com role=dev-role-iam \
@@ -156,6 +156,9 @@ retry \
 # /opt/vault/bin/vault read secret/example_gruntwork
 
 vault kv get /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+
+# if this script fails, we can set the instance health status but we need to capture a fault
+# aws autoscaling set-instance-health --instance-id i-0b03e12682e74746e --health-status Unhealthy
 
 # # Serves the answer in a web server so we can test that this auth client is
 # # authenticating to vault and fetching data correctly
