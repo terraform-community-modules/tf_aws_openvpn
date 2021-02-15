@@ -18,7 +18,7 @@ resource "aws_security_group" "openvpn" {
   vpc_id      = var.vpc_id
   description = "OpenVPN security group"
 
-  tags = merge(map("Name", format("%s", var.name)), var.common_tags, local.extra_tags)
+  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
 
   ingress {
     protocol    = "-1"
@@ -220,7 +220,7 @@ resource "aws_instance" "openvpn" {
     delete_on_termination = true
   }
 
-  tags = merge(map("Name", format("%s", var.name)), var.common_tags, local.extra_tags)
+  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
   # https://docs.openvpn.net/how-to-tutorialsguides/virtual-platforms/amazon-ec2-appliance-ami-quick-start-guide/
@@ -276,7 +276,7 @@ resource "aws_eip" "openvpnip" {
   instance   = aws_instance.openvpn[count.index].id
   depends_on = [aws_instance.openvpn]
 
-  tags = merge(map("Name", format("%s", var.name)), var.common_tags, local.extra_tags)
+  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
 
 }
 

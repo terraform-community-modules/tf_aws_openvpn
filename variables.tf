@@ -26,6 +26,7 @@ variable "consul_cluster_tag_key" {
 }
 variable "name" {
   default = "openvpn"
+  type = string
 }
 
 variable "create_vpn" {}
