@@ -7,6 +7,7 @@ set -e
 
 admin_user="${openvpn_admin_user}" 
 admin_pw="${openvpn_admin_pw}"
+resourcetier="${resourcetier}"
 # TODO these will be replaced with calls to vault.
 
 # Send the log output from this script to user-data.log, syslog, and the console
@@ -163,8 +164,9 @@ function retrieve_file {
   # vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
   local -r response=$(retry \
-  "vault kv get -format=json /${resourcetier}/files/$file_path" \
+  "vault kv get -format=json /$resourcetier/files/$file_path" \
   "Trying to read secret from vault")
+  mkdir -p $(dirname $file_path) # ensure the directory exists
   echo $response | jq -r .data.data.file > $file_path
   local -r permissions=$(echo $response | jq -r .data.data.permissions)
   local -r uid=$(echo $response | jq -r .data.data.uid)
