@@ -79,7 +79,7 @@ function retrieve_file {
   "vault kv get -format=json /$resourcetier/files/$source_path" \
   "Trying to read secret from vault")
   sudo mkdir -p $(dirname $target_path) # ensure the directory exists
-  echo $response | jq -r .data.data.file | sudo tee $target_path
+  echo $response | jq -r .data.data | sudo tee $target_path # retrieve full json blob to later pass permissions if required.
   # skipping permissions
   # local -r permissions=$(echo $response | jq -r .data.data.permissions)
   # local -r uid=$(echo $response | jq -r .data.data.uid)
