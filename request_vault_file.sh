@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script aquire needed vpn client files from vault
+# This script aquires needed vpn client files from vault to an intermediary bastion
 
 set -e
 
