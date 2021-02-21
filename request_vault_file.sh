@@ -1,12 +1,10 @@
 #!/bin/bash
-# This script is meant to be run in the User Data of each EC2 Instance while it's booting. The script uses the
-# run-consul script to configure and start Consul in client mode. Note that this script assumes it's running in an AMI
-# built from the Packer template in examples/vault-consul-ami/vault-consul.json.
+# This script aquire needed vpn client files from vault
 
 set -e
 
 if [[ -z "$1" ]]; then
-  echo "arg dev/green/blue must be provided."
+  echo "Error: Arg dev/green/blue/main must be provided."
   exit 1
 fi
 
@@ -75,15 +73,15 @@ function retrieve_file {
   local -r response=$(retry \
   "vault kv get -format=json /$resourcetier/files/$file_path" \
   "Trying to read secret from vault")
-  mkdir -p $(dirname $file_path) # ensure the directory exists
-  echo $response | jq -r .data.data.file > $file_path
+  sudo mkdir -p $(dirname $file_path) # ensure the directory exists
+  echo $response | jq -r .data.data.file | sudo tee $file_path
   local -r permissions=$(echo $response | jq -r .data.data.permissions)
   local -r uid=$(echo $response | jq -r .data.data.uid)
   local -r gid=$(echo $response | jq -r .data.data.gid)
   echo "Setting:"
   echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-  chown $uid:$gid $file_path
-  chmod $permissions $file_path
+  sudo chown $uid:$gid $file_path
+  sudo chmod $permissions $file_path
 }
 
 # Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
