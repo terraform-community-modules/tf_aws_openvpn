@@ -5,7 +5,12 @@
 
 set -e
 
-resourcetier="${resourcetier}"
+if [[ -z "$1" ]]; then
+  echo "arg dev/green/blue must be provided."
+  exit 1
+fi
+
+resourcetier="$1"
 attempts=1
 
 # Log the given message. All logs are written to stderr with a timestamp.
