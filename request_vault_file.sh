@@ -80,13 +80,14 @@ function retrieve_file {
   "Trying to read secret from vault")
   sudo mkdir -p $(dirname $target_path) # ensure the directory exists
   echo $response | jq -r .data.data.file | sudo tee $target_path
-  local -r permissions=$(echo $response | jq -r .data.data.permissions)
-  local -r uid=$(echo $response | jq -r .data.data.uid)
-  local -r gid=$(echo $response | jq -r .data.data.gid)
-  echo "Setting:"
-  echo "uid:$uid gid:$gid permissions:$permissions target_path:$target_path"
-  sudo chown $uid:$gid $target_path
-  sudo chmod $permissions $target_path
+  # skipping permissions
+  # local -r permissions=$(echo $response | jq -r .data.data.permissions)
+  # local -r uid=$(echo $response | jq -r .data.data.uid)
+  # local -r gid=$(echo $response | jq -r .data.data.gid)
+  # echo "Setting:"
+  # echo "uid:$uid gid:$gid permissions:$permissions target_path:$target_path"
+  # sudo chown $uid:$gid $target_path
+  # sudo chmod $permissions $target_path
 }
 
 # Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
