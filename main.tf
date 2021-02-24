@@ -247,8 +247,8 @@ resource "vault_token" "vpn_admin" {
   policies = ["vpn_server"]
 
   renewable = true
-  ttl = "600s"
-  period = "300s"
+  ttl       = "600s"
+  period    = "300s"
 }
 
 data "template_file" "user_data_auth_client" {
@@ -260,10 +260,17 @@ data "template_file" "user_data_auth_client" {
     example_role_name        = var.example_role_name
     openvpn_admin_user       = var.openvpn_admin_user
     openvpn_admin_pw         = var.openvpn_admin_pw
+    openvpn_user             = var.openvpn_user
+    openvpn_user_pw          = var.openvpn_user_pw
     resourcetier             = var.resourcetier
-    # aws_secret_access_key    = data.vault_aws_access_credentials.creds.access_key
-    # aws_access_key_id        = data.vault_aws_access_credentials.creds.secret_key
-    vault_token = vault_token.vpn_admin.client_token
+    vault_token              = vault_token.vpn_admin.client_token
+
+    client_network      = element(split("/", var.vpn_cidr), 0)
+    client_netmask_bits = element(split("/", var.vpn_cidr), 1)
+    private_subnet1     = element(var.private_subnets, 0)
+    public_subnet1      = element(var.public_subnets, 0)
+    aws_internal_domain = ".consul"
+    remote_subnet_cidr  = var.remote_subnet_cidr
   }
 }
 

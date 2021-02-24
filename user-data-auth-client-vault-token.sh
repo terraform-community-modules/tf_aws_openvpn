@@ -5,8 +5,11 @@
 
 set -e
 
-admin_user="${openvpn_admin_user}" 
+admin_user="${openvpn_admin_user}"
 admin_pw="${openvpn_admin_pw}"
+
+openvpn_user="${openvpn_user}" # TODO temporary use of admin for testing. Should be replaced with another user.
+openvpn_user_pw="${openvpn_user_pw}"
 resourcetier="${resourcetier}"
 # TODO these will be replaced with calls to vault.
 
@@ -132,64 +135,80 @@ function retry {
 #   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
 #   "Trying to read secret from vault")
 
-# If vault cli is installed we can also perform these operations with vault cli
-# The necessary environment variables have to be set
-# export VAULT_TOKEN=$token
-export VAULT_ADDR=https://vault.service.consul:8200
+client_network=${client_network}
+client_netmask_bits=${client_netmask_bits}
+private_subnet1=${private_subnet1}
+public_subnet1=${public_subnet1}
+aws_internal_domain=${aws_internal_domain}
+remote_subnet_cidr=${remote_subnet_cidr}
 
-# Start the Vault agent
-# /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
+ls -la /usr/local/openvpn_as/scripts/
+/usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v $client_network ConfigPut
+/usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v $client_netmask_bits ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value 'true' ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.gateway_access --value 'true' ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.0 --value "$private_subnet1" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.1 --value "$public_subnet1" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.2 --value "$client_network/$client_netmask_bits" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_access --value 'route' ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key 'vpn.client.routing.reroute_dns' --value 'true' ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key 'vpn.server.dhcp_option.domain' --value "$aws_internal_domain" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key 'vpn.server.routing.allow_private_nets_to_clients' --value 'true' ConfigPut
+/usr/local/openvpn_as/scripts/sacli start
+cd /usr/local/openvpn_as/scripts/
+./sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
+./sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
+./sacli --user $openvpn_user AutoGenerateOnBehalfOf
+./sacli -o ./seperate --cn $openvpn_user get5
+chown $openvpn_user seperate/*
+/usr/local/openvpn_as/scripts/sacli start
+ls -la seperate
 
-# Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# because the Vault server is still booting and unsealing, or because run-consul
-# running on the background didn't finish yet
-retry \
-  "vault login  --no-print ${vault_token}" \
-  "Waiting for Vault login"
 
-# vault login -method=aws header_value=vault.example.com role=dev-role-iam \
-#         aws_access_key_id=<access_key> \
-#         aws_secret_access_key=<secret_key>
+# ### Method to reqaquire existing certs from vault ###
 
-# # We can then use the client token from the login output once login was successful
-# token=$(cat /opt/vault/data/vault-token)
+# # If vault cli is installed we can also perform these operations with vault cli
+# # The necessary environment variables have to be set
+# # export VAULT_TOKEN=$token
+# export VAULT_ADDR=https://vault.service.consul:8200
 
-# /opt/vault/bin/vault read secret/example_gruntwork
-echo "Aquiring vault data..."
-# data=$(vault kv get -format=json /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt)
+# # Start the Vault agent
+# # /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
 
-function retrieve_file {
-  local -r file_path="$1"
-  # file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
-  # vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+# # Retry and wait for the Vault Agent to write the token out to a file.  This could be
+# # because the Vault server is still booting and unsealing, or because run-consul
+# # running on the background didn't finish yet
+# retry \
+#   "vault login  --no-print ${vault_token}" \
+#   "Waiting for Vault login"
 
-  local -r response=$(retry \
-  "vault kv get -format=json /$resourcetier/files/$file_path" \
-  "Trying to read secret from vault")
-  mkdir -p $(dirname $file_path) # ensure the directory exists
-  echo $response | jq -r .data.data.file > $file_path
-  local -r permissions=$(echo $response | jq -r .data.data.permissions)
-  local -r uid=$(echo $response | jq -r .data.data.uid)
-  local -r gid=$(echo $response | jq -r .data.data.gid)
-  echo "Setting:"
-  echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-  chown $uid:$gid $file_path
-  chmod $permissions $file_path
-}
+# echo "Aquiring vault data..."
 
-# Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
+# function retrieve_file {
+#   local -r file_path="$1"
+#   # file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
+#   # vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
-retrieve_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
-retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
-retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.key"
-retrieve_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
-retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
+#   local -r response=$(retry \
+#   "vault kv get -format=json /$resourcetier/files/$file_path" \
+#   "Trying to read secret from vault")
+#   mkdir -p $(dirname $file_path) # ensure the directory exists
+#   echo $response | jq -r .data.data.file > $file_path
+#   local -r permissions=$(echo $response | jq -r .data.data.permissions)
+#   local -r uid=$(echo $response | jq -r .data.data.uid)
+#   local -r gid=$(echo $response | jq -r .data.data.gid)
+#   echo "Setting:"
+#   echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
+#   chown $uid:$gid $file_path
+#   chmod $permissions $file_path
+# }
+
+# # Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
+
+# retrieve_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
+# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
+# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.key"
+# retrieve_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
+# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
 
 echo "Done."
-# if this script fails, we can set the instance health status but we need to capture a fault
-# aws autoscaling set-instance-health --instance-id i-0b03e12682e74746e --health-status Unhealthy
-
-# # Serves the answer in a web server so we can test that this auth client is
-# # authenticating to vault and fetching data correctly
-# echo $response | jq -r .data.the_answer > index.html
-# python -m SimpleHTTPServer 8080 &
