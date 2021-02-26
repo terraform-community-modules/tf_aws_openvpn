@@ -164,6 +164,7 @@ cd /usr/local/openvpn_as/scripts/
 ./sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
 ./sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
 ./sacli --user $openvpn_user AutoGenerateOnBehalfOf
+mkdir seperate
 ./sacli -o ./seperate --cn $openvpn_user get5
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
