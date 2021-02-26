@@ -244,7 +244,7 @@ resource "vault_token" "vpn_admin" {
   # dynamically generate a token with constrained permisions for the vpn role.
   role_name = "vpn-server-vault-token-creds-role"
 
-  policies = ["vpn_server"]
+  policies = ["vpn_server","ssh_host"]
 
   renewable = true
   ttl       = "600s"

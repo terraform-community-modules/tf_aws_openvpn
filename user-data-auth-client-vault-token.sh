@@ -165,56 +165,117 @@ cd /usr/local/openvpn_as/scripts/
 ./sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
 ./sacli --user $openvpn_user AutoGenerateOnBehalfOf
 mkdir seperate
-./sacli -o ./seperate --cn $openvpn_user get5
+./sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get5
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
 ls -la seperate
 
 
-# ### Method to reqaquire existing certs from vault ###
+### Method to put or aquire certs from vault ###
 
-# # If vault cli is installed we can also perform these operations with vault cli
-# # The necessary environment variables have to be set
-# # export VAULT_TOKEN=$token
-# export VAULT_ADDR=https://vault.service.consul:8200
+# If vault cli is installed we can also perform these operations with vault cli
+# The necessary environment variables have to be set
+# export VAULT_TOKEN=$token
+export VAULT_ADDR=https://vault.service.consul:8200
 
 # # Start the Vault agent
 # # /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
 
-# # Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# # because the Vault server is still booting and unsealing, or because run-consul
-# # running on the background didn't finish yet
-# retry \
-#   "vault login  --no-print ${vault_token}" \
-#   "Waiting for Vault login"
+# Retry and wait for the Vault Agent to write the token out to a file.  This could be
+# because the Vault server is still booting and unsealing, or because run-consul
+# running on the background didn't finish yet
+retry \
+  "vault login  --no-print ${vault_token}" \
+  "Waiting for Vault login"
 
-# echo "Aquiring vault data..."
+log "Request Vault sign's the SSH host key and becomes a known host for other machines."
+# Allow access from clients signed by the CA.
+trusted_ca="/etc/ssh/trusted-user-ca-keys.pem"
+# Aquire the public CA cert to approve an authority
+vault read -field=public_key ssh-client-signer/config/ca | tee $trusted_ca
+if test ! -f "$trusted_ca"; then
+    log "Missing $trusted_ca"
+    exit 1
+fi
+### Sign SSH host key
+if test ! -f "/etc/ssh/ssh_host_rsa_key.pub"; then
+    log "Missing public host key /etc/ssh/ssh_host_rsa_key.pub"
+    exit 1
+fi
+# Sign this host's public key
+vault write -format=json ssh-host-signer/sign/hostrole \
+    cert_type=host \
+    public_key=@/etc/ssh/ssh_host_rsa_key.pub
+# Aquire the cert
+vault write -field=signed_key ssh-host-signer/sign/hostrole \
+    cert_type=host \
+    public_key=@/etc/ssh/ssh_host_rsa_key.pub | tee /etc/ssh/ssh_host_rsa_key-cert.pub
+if test ! -f "/etc/ssh/ssh_host_rsa_key-cert.pub"; then
+    log "Failed to aquire /etc/ssh/ssh_host_rsa_key-cert.pub"
+    exit 1
+fi
+chmod 0640 /etc/ssh/ssh_host_rsa_key-cert.pub
+# Private key and cert are both required for ssh to another host.  Multiple entries for host key may exist.
+grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostKey /etc/ssh/ssh_host_rsa_key' | tee --append /etc/ssh/sshd_config
+# Configure host cert to be recognised as a known host.
+grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
+sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
 
-# function retrieve_file {
-#   local -r file_path="$1"
-#   # file_path=/usr/local/openvpn_as/scripts/seperate/ca.crt
-#   # vault kv get -format=json /${resourcetier}/files/$file_path > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+### Store Generated keys with vault
 
-#   local -r response=$(retry \
-#   "vault kv get -format=json /$resourcetier/files/$file_path" \
-#   "Trying to read secret from vault")
-#   mkdir -p $(dirname $file_path) # ensure the directory exists
-#   echo $response | jq -r .data.data.file > $file_path
-#   local -r permissions=$(echo $response | jq -r .data.data.permissions)
-#   local -r uid=$(echo $response | jq -r .data.data.uid)
-#   local -r gid=$(echo $response | jq -r .data.data.gid)
-#   echo "Setting:"
-#   echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-#   chown $uid:$gid $file_path
-#   chmod $permissions $file_path
-# }
+echo "Storing keys with vault..."
+function retrieve_file {
+  local -r file_path="$1"
+  local -r response=$(retry \
+  "vault kv get -format=json /$resourcetier/files/$file_path" \
+  "Trying to read secret from vault")
+  mkdir -p $(dirname $file_path) # ensure the directory exists
+  echo $response | jq -r .data.data.file > $file_path
+  local -r permissions=$(echo $response | jq -r .data.data.permissions)
+  local -r uid=$(echo $response | jq -r .data.data.uid)
+  local -r gid=$(echo $response | jq -r .data.data.gid)
+  echo "Setting:"
+  echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
+  chown $uid:$gid $file_path
+  chmod $permissions $file_path
+}
+
+function store_file {
+  local -r file_path="$1"
+  local -r target="$2"
+  file_dir=$(dirname $file_path)
+  target="$resourcetier/files/$target"
+  
+  if sudo test -f "$file_path"; then
+    # vault login -no-print -address="$VAULT_ADDR" -method=aws header_value=vault.service.consul role=provisioner-vault-role  
+    vault kv put -address="$VAULT_ADDR" -format=json $target file="$(sudo cat $file_path)"
+    if [[ "$OSTYPE" == "darwin"* ]]; then # Acquire file permissions.
+        octal_permissions=$(sudo stat -f %A $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev ) # clip to 4 zeroes
+    else
+        octal_permissions=$(sudo stat --format '%a' $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev) # clip to 4 zeroes
+    fi
+    octal_permissions=$( python -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
+    vault kv patch -address="$VAULT_ADDR" -format=json $target permissions="$octal_permissions"
+    file_uid="$(sudo stat --format '%u' $file_path)"
+    vault kv patch -address="$VAULT_ADDR" -format=json $target owner="$(sudo id -un -- $file_uid)"
+    vault kv patch -address="$VAULT_ADDR" -format=json $target uid="$file_uid"
+    file_gid="$(sudo stat --format '%g' $file_path)"
+    vault kv patch -address="$VAULT_ADDR" -format=json $target gid="$file_gid"
+  else
+    print "Error: file not found: $file_path"
+    exit 1
+  fi
+}
+
+
+
 
 # # Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
 
-# retrieve_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
-# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
-# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.key"
-# retrieve_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
-# retrieve_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
+store_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
+store_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
+store_file "/usr/local/openvpn_as/scripts/seperate/client.key"
+store_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
+store_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
 
 echo "Done."
