@@ -134,6 +134,7 @@ function retry {
 # response=$(retry \
 #   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
 #   "Trying to read secret from vault")
+set -x
 
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
