@@ -136,6 +136,11 @@ function retry {
 #   "Trying to read secret from vault")
 set -x
 
+timeout 180 /bin/bash -c 'until stat /var/lib/cloud/instance/boot-finished &>/dev/null; do echo waiting...; sleep 6; done'
+echo "=== System Packages ==="
+echo 'Connected success. Wait for updates to finish...' # Open VPN AMI runs apt daily update which must end before we continue.
+systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true; echo \"exit $?\"
+
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
 private_subnet1=${private_subnet1}
