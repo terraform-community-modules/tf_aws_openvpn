@@ -115,8 +115,11 @@ aws_internal_domain=${aws_internal_domain}
 remote_subnet_cidr=${remote_subnet_cidr}
 
 ls -la /usr/local/openvpn_as/scripts/
-# this may need to be in the image
-/usr/local/openvpn_as/scripts/sacli Init 
+
+# see https://evanhoffman.com/2014/07/22/openvpn-cli-cheat-sheet/
+
+# # this may need to be in the image
+# /usr/local/openvpn_as/scripts/sacli Init 
 /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v $client_network ConfigPut
 /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v $client_netmask_bits ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value 'true' ConfigPut
@@ -128,16 +131,27 @@ ls -la /usr/local/openvpn_as/scripts/
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.client.routing.reroute_dns' --value 'true' ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.dhcp_option.domain' --value "$aws_internal_domain" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.routing.allow_private_nets_to_clients' --value 'true' ConfigPut
+
+# ensure listen on interaces at default. restore ip since the old one during ami build is now invalid.
+/usr/local/openvpn_as/scripts/sacli --key "vpn.daemon.0.server.ip_address" --value "all" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key "vpn.daemon.0.listen.ip_address" --value "all" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key "vpn.server.daemon.udp.port" --value "1194" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key "vpn.server.daemon.tcp.port" --value "443" ConfigPut
+
 /usr/local/openvpn_as/scripts/sacli start
+
 cd /usr/local/openvpn_as/scripts/
-./sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
-./sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
-./sacli --user $openvpn_user AutoGenerateOnBehalfOf
-mkdir -p seperate
-./sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get5
+/usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
+/usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
+/usr/local/openvpn_as/scripts/sacli --user $openvpn_user AutoGenerateOnBehalfOf
+mkdir -p /usr/local/openvpn_as/scripts/seperate
+/usr/local/openvpn_as/scripts/sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get5
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
 ls -la seperate
+
+# show entire config
+/usr/local/openvpn_as/scripts/sacli ConfigQuery
 
 ### Store Generated keys with vault
 
