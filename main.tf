@@ -243,12 +243,9 @@ resource "aws_instance" "openvpn" {
 resource "vault_token" "vpn_admin" {
   # dynamically generate a token with constrained permisions for the vpn role.
   role_name = "vpn-server-vault-token-creds-role"
-
   policies = ["vpn_server","ssh_host"]
-
-  renewable = true
-  ttl       = "600s"
-  period    = "300s"
+  renewable        = false
+  explicit_max_ttl = "600s"
 }
 
 data "template_file" "user_data_auth_client" {
