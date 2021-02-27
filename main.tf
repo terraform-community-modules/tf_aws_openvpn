@@ -275,7 +275,7 @@ data "template_file" "user_data_auth_client" {
 #it must reside in the aws_eip resource to be able to establish a connection
 
 resource "aws_eip" "openvpnip" {
-  count      = var.create_vpn ? 1 : 0
+  count      = var.create_vpn && var.use_eip ? 1 : 0
   vpc        = true
   instance   = aws_instance.openvpn[count.index].id
   depends_on = [aws_instance.openvpn]
@@ -326,7 +326,7 @@ EOT
 
 locals {
   private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip         = element(concat(aws_eip.openvpnip.*.public_ip, list("")), 0)
+  public_ip         = element(concat( if( var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip ), list("")), 0)
   id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
@@ -353,7 +353,7 @@ resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk
 
 # resource "null_resource" "provision_vpn" {
 #   count = var.create_vpn ? 1 : 0
-#   depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
+#   depends_on = [local.public_ip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
 
 # #   triggers = {
 # #     instanceid = local.id
@@ -493,7 +493,7 @@ variable "start_vpn" {
 
 resource "aws_route" "private_openvpn_remote_subnet_gateway" {
   count      = var.create_vpn ? length(var.private_route_table_ids) : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
   destination_cidr_block = var.remote_subnet_cidr
@@ -506,7 +506,7 @@ resource "aws_route" "private_openvpn_remote_subnet_gateway" {
 
 resource "aws_route" "public_openvpn_remote_subnet_gateway" {
   count      = var.create_vpn ? length(var.public_route_table_ids) : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
   destination_cidr_block = var.remote_subnet_cidr
@@ -520,7 +520,7 @@ resource "aws_route" "public_openvpn_remote_subnet_gateway" {
 ### routes may be needed for traffic going back to open vpn dhcp adresses
 resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
   count      = var.create_vpn ? length(var.private_route_table_ids) : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
   destination_cidr_block = var.vpn_cidr
@@ -533,7 +533,7 @@ resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
 
 resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
   count      = var.create_vpn ? length(var.public_route_table_ids) : 0
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
   destination_cidr_block = var.vpn_cidr
@@ -546,7 +546,7 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 
 output "id" {
   value      = local.id
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
@@ -557,7 +557,7 @@ output "id" {
 
 output "private_ip" {
   value      = local.private_ip
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
@@ -568,7 +568,7 @@ output "private_ip" {
 
 output "public_ip" {
   value      = local.public_ip
-  depends_on = [aws_eip.openvpnip, aws_route53_record.openvpn_record]
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
   # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
   #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
   #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 

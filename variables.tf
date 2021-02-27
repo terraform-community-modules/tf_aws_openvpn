@@ -109,6 +109,12 @@ variable "openvpn_admin_pw" {
   }
 }
 
+variable "use_eip" {
+  description = "Allows the provisioning of an elsatice IP"
+  type = bool
+  default = false
+}
+
 variable "vpn_cidr" {
 }
 
