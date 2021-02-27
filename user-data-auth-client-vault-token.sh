@@ -55,10 +55,8 @@ function retry {
 }
 
 export AWS_DEFAULT_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
-public_ip=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output=text)
-echo "Public IP: $public_ip"
-private_ip=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PrivateIpAddress' --output=text)
-echo "Private IP: $private_ip"
+public_ip=$(curl http://169.254.169.254/latest/meta-data/public-ipv4); echo "Public IP: $public_ip"
+private_ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4); echo "Private IP: $private_ip"
 
 # If vault cli is installed we can also perform these operations with vault cli
 # The necessary environment variables have to be set
