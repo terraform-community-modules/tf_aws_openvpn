@@ -54,6 +54,55 @@ function retry {
   exit $exit_status
 }
 
+# If vault cli is installed we can also perform these operations with vault cli
+# The necessary environment variables have to be set
+# export VAULT_TOKEN=$token
+export VAULT_ADDR=https://vault.service.consul:8200
+
+# # Start the Vault agent
+# # /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
+
+# Retry and wait for the Vault Agent to write the token out to a file.  This could be
+# because the Vault server is still booting and unsealing, or because run-consul
+# running on the background didn't finish yet
+retry \
+  "vault login  --no-print ${vault_token}" \
+  "Waiting for Vault login"
+
+log "Request Vault sign's the SSH host key and becomes a known host for other machines."
+# Allow access from clients signed by the CA.
+trusted_ca="/etc/ssh/trusted-user-ca-keys.pem"
+# Aquire the public CA cert to approve an authority
+vault read -field=public_key ssh-client-signer/config/ca | tee $trusted_ca
+if test ! -f "$trusted_ca"; then
+    log "Missing $trusted_ca"
+    exit 1
+fi
+### Sign SSH host key
+if test ! -f "/etc/ssh/ssh_host_rsa_key.pub"; then
+    log "Missing public host key /etc/ssh/ssh_host_rsa_key.pub"
+    exit 1
+fi
+# Sign this host's public key
+vault write -format=json ssh-host-signer/sign/hostrole \
+    cert_type=host \
+    public_key=@/etc/ssh/ssh_host_rsa_key.pub
+# Aquire the cert
+vault write -field=signed_key ssh-host-signer/sign/hostrole \
+    cert_type=host \
+    public_key=@/etc/ssh/ssh_host_rsa_key.pub | tee /etc/ssh/ssh_host_rsa_key-cert.pub
+if test ! -f "/etc/ssh/ssh_host_rsa_key-cert.pub"; then
+    log "Failed to aquire /etc/ssh/ssh_host_rsa_key-cert.pub"
+    exit 1
+fi
+chmod 0640 /etc/ssh/ssh_host_rsa_key-cert.pub
+# Private key and cert are both required for ssh to another host.  Multiple entries for host key may exist.
+grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostKey /etc/ssh/ssh_host_rsa_key' | tee --append /etc/ssh/sshd_config
+# Configure host cert to be recognised as a known host.
+grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
+sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
+
+
 # Retrieves the pkcs7 certificate from instance metadata
 # The vault role name is filled by terraform
 # The role itself is created when configuting the vault cluster
@@ -136,9 +185,10 @@ function retry {
 #   "Trying to read secret from vault")
 set -x
 
-echo "=== System Packages ==="
-echo 'Connected success. Wait for updates to finish...' # Open VPN AMI runs apt daily update which must end before we continue.
-systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true; echo \"exit $?\"
+# if apt prevents operations during boot, you may need to wait, but this should have been fixed in the ami with override.conf
+# echo "=== System Packages ==="
+# echo 'Connected success. Wait for updates to finish...' # Open VPN AMI runs apt daily update which must end before we continue.
+# systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true; echo \"exit $?\"
 
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
@@ -169,57 +219,6 @@ mkdir seperate
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
 ls -la seperate
-
-
-### Method to put or aquire certs from vault ###
-
-# If vault cli is installed we can also perform these operations with vault cli
-# The necessary environment variables have to be set
-# export VAULT_TOKEN=$token
-export VAULT_ADDR=https://vault.service.consul:8200
-
-# # Start the Vault agent
-# # /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
-
-# Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# because the Vault server is still booting and unsealing, or because run-consul
-# running on the background didn't finish yet
-retry \
-  "vault login  --no-print ${vault_token}" \
-  "Waiting for Vault login"
-
-log "Request Vault sign's the SSH host key and becomes a known host for other machines."
-# Allow access from clients signed by the CA.
-trusted_ca="/etc/ssh/trusted-user-ca-keys.pem"
-# Aquire the public CA cert to approve an authority
-vault read -field=public_key ssh-client-signer/config/ca | tee $trusted_ca
-if test ! -f "$trusted_ca"; then
-    log "Missing $trusted_ca"
-    exit 1
-fi
-### Sign SSH host key
-if test ! -f "/etc/ssh/ssh_host_rsa_key.pub"; then
-    log "Missing public host key /etc/ssh/ssh_host_rsa_key.pub"
-    exit 1
-fi
-# Sign this host's public key
-vault write -format=json ssh-host-signer/sign/hostrole \
-    cert_type=host \
-    public_key=@/etc/ssh/ssh_host_rsa_key.pub
-# Aquire the cert
-vault write -field=signed_key ssh-host-signer/sign/hostrole \
-    cert_type=host \
-    public_key=@/etc/ssh/ssh_host_rsa_key.pub | tee /etc/ssh/ssh_host_rsa_key-cert.pub
-if test ! -f "/etc/ssh/ssh_host_rsa_key-cert.pub"; then
-    log "Failed to aquire /etc/ssh/ssh_host_rsa_key-cert.pub"
-    exit 1
-fi
-chmod 0640 /etc/ssh/ssh_host_rsa_key-cert.pub
-# Private key and cert are both required for ssh to another host.  Multiple entries for host key may exist.
-grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostKey /etc/ssh/ssh_host_rsa_key' | tee --append /etc/ssh/sshd_config
-# Configure host cert to be recognised as a known host.
-grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
-sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
 
 ### Store Generated keys with vault
 
