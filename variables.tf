@@ -45,9 +45,6 @@ variable "remote_ssh_ip_cidr" {
   description = "The IP used to ssh to the access server for admin."
 }
 
-variable "remote_subnet_cidr" {
-}
-
 variable "public_subnet_ids" {
   default = []
 }
@@ -116,9 +113,19 @@ variable "use_eip" {
 }
 
 variable "vpn_cidr" {
+  description = "The CIDR range that the vpn will assign using DHCP.  These are virtual addresses for routing traffic."
+  type        = string
+}
+
+variable "remote_subnet_cidr" {
+  description = "The subnet CIDR Range of your onsite private subnet. This is also the subnet where your VPN client resides in. eg: 192.168.1.0/24"
+  type        = string
 }
 
 variable "public_domain_name" {
+  description = "(Optional) The public domain if required for DNS names of hosts eg: vpn.example.com"
+  type        = string
+  default     = null
 }
 
 variable "route_zone_id" {
