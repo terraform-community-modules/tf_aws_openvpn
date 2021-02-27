@@ -105,93 +105,7 @@ grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostK
 grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
 sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
 
-
-# Retrieves the pkcs7 certificate from instance metadata
-# The vault role name is filled by terraform
-# The role itself is created when configuting the vault cluster
-# pkcs7=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/pkcs7 | tr -d '\n')
-# data=$(cat <<EOF
-# {
-#   "role": "${example_role_name}",
-#   "pkcs7": "$pkcs7"
-# }
-# EOF
-# )
-
-# run-consul is running on the background, so we have to wait for it and
-# we also have to for wait for vault server to be booted and unsealed before it can accept this request
-# so in case this fails we retry.
-# login_output=$(retry \
-#   "curl --fail --request POST --data '$data' https://vault.service.consul:8200/v1/auth/aws/login" \
-#   "Trying to login to vault")
-
-# It is important to note that the default behavior is TOFU(trust on first use)
-# So if the pkcs7 certificate gets compromised, attempts to login again will be
-# denied unless the client "nonce" returned at the first login is also provided
-# Read more at https://www.vaultproject.io/docs/auth/aws.html#client-nonce
-#
-# nonce=$(echo $login_output | jq -r .auth.metadata.nonce)
-# data=$(cat <<EOF
-# {
-#   "role": "${example_role_name}",
-#   "pkcs7": "$pkcs7",
-#   "nonce": "$nonce"
-# }
-# EOF
-# )
-# curl --request POST --data "$data" "https://vault.service.consul:8200/v1/auth/aws/login"
-#
-# ==============================================================================
-# The output after initial login will be similar to this:
-# {
-#   "request_id": "eed334ef-30bc-44a4-2a7f-93ecd7ce23cd",
-#   "lease_id": "",
-#   "renewable": false,
-#   "lease_duration": 0,
-#   "data": null,
-#   "wrap_info": null,
-#   "warnings": [
-#     "TTL of \"768h0m0s\" exceeded the effective max_ttl of \"500h0m0s\"; TTL value is capped accordingly"
-#   ],
-#   "auth": {
-#     "client_token": "0ac5b97d-9637-9c03-ce37-77565ed66b8a",
-#     "accessor": "f56d56cf-b3a9-d77b-439e-5ea42563a62b",
-#     "policies": [
-#       "default",
-#       "example-policy"
-#     ],
-#     "token_policies": [
-#       "default",
-#       "example-policy"
-#     ],
-#     "metadata": {
-#       "account_id": "738755648600",
-#       "ami_id": "ami-0a50e8de57a8606a7",
-#       "instance_id": "i-0e1c0ef82afa24a7c",
-#       "nonce": "d60cf363-eb83-3142-74c3-647445365e32",
-#       "region": "eu-west-1",
-#       "role": "dev-role",
-#       "role_tag_max_ttl": "0s"
-#     },
-#     "lease_duration": 1800000,
-#     "renewable": true,
-#     "entity_id": "5051f586-eef5-064e-eca6-768b1de7d19f"
-#   }
-# }
-
-# # We can then use the client token from this output
-# token=$(echo $login_output | jq -r .auth.client_token)
-
-# # And use the token to perform operations on vault such as reading a secret
-# response=$(retry \
-#   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
-#   "Trying to read secret from vault")
 set -x
-
-# if apt prevents operations during boot, you may need to wait, but this should have been fixed in the ami with override.conf
-# echo "=== System Packages ==="
-# echo 'Connected success. Wait for updates to finish...' # Open VPN AMI runs apt daily update which must end before we continue.
-# systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true; echo \"exit $?\"
 
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
@@ -201,6 +115,8 @@ aws_internal_domain=${aws_internal_domain}
 remote_subnet_cidr=${remote_subnet_cidr}
 
 ls -la /usr/local/openvpn_as/scripts/
+# this may need to be in the image
+/usr/local/openvpn_as/scripts/sacli Init 
 /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.network -v $client_network ConfigPut
 /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v $client_netmask_bits ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value 'true' ConfigPut
