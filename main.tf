@@ -326,7 +326,7 @@ EOT
 
 locals {
   private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip         = element(concat( if( var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip ), list("")), 0)
+  public_ip         = element(concat( var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip , list("")), 0)
   id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
