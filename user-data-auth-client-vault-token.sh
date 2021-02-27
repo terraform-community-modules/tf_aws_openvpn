@@ -241,10 +241,12 @@ function retrieve_file {
 
 function store_file {
   local -r file_path="$1"
-  local -r target="$2"
-  file_dir=$(dirname $file_path)
-  target="$resourcetier/files/$target"
-  
+  if [[ -z "$2" ]]; then
+    local target="$resourcetier/files/$target"
+  else
+    local target="$2"
+  fi
+    
   if sudo test -f "$file_path"; then
     # vault login -no-print -address="$VAULT_ADDR" -method=aws header_value=vault.service.consul role=provisioner-vault-role  
     vault kv put -address="$VAULT_ADDR" -format=json $target file="$(sudo cat $file_path)"
