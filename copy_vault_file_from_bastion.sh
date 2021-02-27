@@ -52,6 +52,8 @@ retrieve_file "/home/centos/tmp/usr/local/openvpn_as/scripts/seperate/client.key
 retrieve_file "/home/centos/tmp/usr/local/openvpn_as/scripts/seperate/ta.key"
 retrieve_file "/home/centos/tmp/usr/local/openvpn_as/scripts/seperate/client.ovpn"
 
+cp ./client.ovpn ./openvpn.conf
+
 log "...Cleaning up"
 ssh -o ProxyCommand="ssh $host1 -W %h:%p" $host2 "sudo rm -frv /home/centos/tmp/*"
 

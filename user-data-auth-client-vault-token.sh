@@ -54,6 +54,9 @@ function retry {
   exit $exit_status
 }
 
+echo "Public IP: $(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output=text)"
+echo "Private IP: $(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PrivateIpAddress' --output=text)"
+
 # If vault cli is installed we can also perform these operations with vault cli
 # The necessary environment variables have to be set
 # export VAULT_TOKEN=$token
@@ -214,7 +217,7 @@ cd /usr/local/openvpn_as/scripts/
 ./sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
 ./sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
 ./sacli --user $openvpn_user AutoGenerateOnBehalfOf
-mkdir seperate
+mkdir -p seperate
 ./sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get5
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
