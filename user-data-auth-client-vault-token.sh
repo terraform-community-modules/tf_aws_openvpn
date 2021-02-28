@@ -147,7 +147,7 @@ cd /usr/local/openvpn_as/scripts/
 /usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
 /usr/local/openvpn_as/scripts/sacli --user $openvpn_user AutoGenerateOnBehalfOf
 mkdir -p /usr/local/openvpn_as/scripts/seperate
-/usr/local/openvpn_as/scripts/sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get5
+/usr/local/openvpn_as/scripts/sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get1
 chown $openvpn_user seperate/*
 /usr/local/openvpn_as/scripts/sacli start
 ls -la seperate
@@ -203,15 +203,10 @@ function store_file {
   fi
 }
 
+# Store generated certs in vault
 
-
-
-# # Retrieve previously generated secrets from Vault.  Would be better if we can use vault as an intermediary to generate certs.
-
-store_file "/usr/local/openvpn_as/scripts/seperate/ca.crt"
-store_file "/usr/local/openvpn_as/scripts/seperate/client.crt"
-store_file "/usr/local/openvpn_as/scripts/seperate/client.key"
-store_file "/usr/local/openvpn_as/scripts/seperate/ta.key"
-store_file "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
+for filename in /usr/local/openvpn_as/scripts/seperate/*; do
+    store_file "$filename"
+done
 
 echo "Done."
