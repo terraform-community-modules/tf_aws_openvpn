@@ -117,7 +117,7 @@ variable "vpn_cidr" {
   type        = string
 }
 
-variable "remote_subnet_cidr" {
+variable "onsite_private_subnet_cidr" {
   description = "The subnet CIDR Range of your onsite private subnet. This is also the subnet where your VPN client resides in. eg: 192.168.1.0/24"
   type        = string
 }

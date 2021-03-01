@@ -24,7 +24,7 @@ resource "aws_security_group" "openvpn" {
     protocol    = "-1"
     from_port   = 0
     to_port     = 0
-    cidr_blocks = [var.vpc_cidr, var.vpn_cidr, var.remote_subnet_cidr]
+    cidr_blocks = [var.vpc_cidr, var.vpn_cidr, var.onsite_private_subnet_cidr]
 
     description = "all incoming traffic from vpc, vpn dhcp, and remote subnet"
   }
@@ -267,7 +267,7 @@ data "template_file" "user_data_auth_client" {
     private_subnet1     = element(var.private_subnets, 0)
     public_subnet1      = element(var.public_subnets, 0)
     aws_internal_domain = ".consul"
-    remote_subnet_cidr  = var.remote_subnet_cidr
+    onsite_private_subnet_cidr  = var.onsite_private_subnet_cidr
   }
 }
 
@@ -462,12 +462,12 @@ resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk
 #     command = <<EOT
 #       . /vagrant/scripts/exit_test.sh
 #       echo "environment vars in this case seem to need to be pushed via the shell"
-#       echo "TF_VAR_remote_subnet_cidr: $TF_VAR_remote_subnet_cidr"
-#       echo "remote_subnet_cidr: ${var.remote_subnet_cidr}"
+#       echo "TF_VAR_onsite_private_subnet_cidr: $TF_VAR_onsite_private_subnet_cidr"
+#       echo "onsite_private_subnet_cidr: ${var.onsite_private_subnet_cidr}"
 #       echo "private_subnet1: ${element(var.private_subnets, 0)}"
 #       echo "public_subnet1: ${element(var.public_subnets, 0)}"
 #       set -x
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "vpn_address=${local.vpn_address} private_domain_name=${var.private_domain_name} private_ip=${local.private_ip} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} remote_subnet_cidr=${var.remote_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
+#       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "vpn_address=${local.vpn_address} private_domain_name=${var.private_domain_name} private_ip=${local.private_ip} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} onsite_private_subnet_cidr=${var.onsite_private_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
 #       ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v --extra-vars "variable_host=ansible_control variable_user=deployuser hostname=ansible_control ethernet_interface=eth1" # configure routes for ansible control to the gateway to test the connection
 
 #       if [[ "$TF_VAR_set_routes_on_workstation" = "true" ]]; then # Intended for a dev envoronment only where multiple parralel deployments may occur, we cant provision a router for each subnet
@@ -496,7 +496,7 @@ resource "aws_route" "private_openvpn_remote_subnet_gateway" {
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
-  destination_cidr_block = var.remote_subnet_cidr
+  destination_cidr_block = var.onsite_private_subnet_cidr
   instance_id            = local.id
 
   timeouts {
@@ -509,7 +509,7 @@ resource "aws_route" "public_openvpn_remote_subnet_gateway" {
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
-  destination_cidr_block = var.remote_subnet_cidr
+  destination_cidr_block = var.onsite_private_subnet_cidr
   instance_id            = local.id
 
   timeouts {

@@ -113,7 +113,7 @@ client_netmask_bits=${client_netmask_bits}
 private_subnet1=${private_subnet1}
 public_subnet1=${public_subnet1}
 aws_internal_domain=${aws_internal_domain}
-remote_subnet_cidr=${remote_subnet_cidr}
+onsite_private_subnet_cidr=${onsite_private_subnet_cidr}
 
 ls -la /usr/local/openvpn_as/scripts/
 
@@ -144,7 +144,7 @@ ls -la /usr/local/openvpn_as/scripts/
 
 cd /usr/local/openvpn_as/scripts/
 /usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'prop_autologin' --value 'true' UserPropPut
-/usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'c2s_route.0' --value "$remote_subnet_cidr" UserPropPut
+/usr/local/openvpn_as/scripts/sacli --user $openvpn_user --key 'c2s_route.0' --value "$onsite_private_subnet_cidr" UserPropPut
 /usr/local/openvpn_as/scripts/sacli --user $openvpn_user AutoGenerateOnBehalfOf
 mkdir -p /usr/local/openvpn_as/scripts/seperate
 /usr/local/openvpn_as/scripts/sacli -o ./seperate --cn "${openvpn_user}_AUTOLOGIN" get1
