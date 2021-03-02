@@ -6,10 +6,9 @@
 set -e
 
 admin_user="${openvpn_admin_user}"
-admin_pw="${openvpn_admin_pw}"
-
+admin_pw="$(openssl rand -base64 12)" # auto generate instance pass and store in vault after vault login.
 openvpn_user="${openvpn_user}" # TODO temporary use of admin for testing. Should be replaced with another user.
-openvpn_user_pw="${openvpn_user_pw}"
+openvpn_user_pw="$(openssl rand -base64 12)"
 resourcetier="${resourcetier}"
 # TODO these will be replaced with calls to vault.
 
@@ -155,9 +154,13 @@ ls -la seperate
 # show entire config
 /usr/local/openvpn_as/scripts/sacli ConfigQuery
 
-### Store Generated keys with vault
+### Store Generated keys and password with vault
 
 echo "Storing keys with vault..."
+
+vault kv patch -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value=${admin_pw}
+vault kv patch -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value=${openvpn_user_pw}
+
 function retrieve_file {
   local -r file_path="$1"
   local -r response=$(retry \
