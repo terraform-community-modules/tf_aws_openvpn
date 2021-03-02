@@ -207,8 +207,8 @@ resource "aws_instance" "openvpn" {
   depends_on = [null_resource.gateway_dependency, null_resource.bastion_dependency]
   ami        = var.ami
   # ami               = local.ami
-  # needs VPNServerRole
-  iam_instance_profile = "VPNServerProfile"
+  # needs VPNServerRole_${var.conflictkey}
+  # iam_instance_profile = "VPNServerProfile_${var.conflictkey}" # this profile is temporarily disabled while testing passing through a vault token that is revoked.
   instance_type        = var.instance_type
   key_name             = var.aws_key_name
   subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
