@@ -208,7 +208,7 @@ resource "aws_instance" "openvpn" {
   ami        = var.ami
   # ami               = local.ami
   # needs VPNServerRole_${var.conflictkey}
-  # iam_instance_profile = "VPNServerProfile_${var.conflictkey}" # this profile is temporarily disabled while testing passing through a vault token that is revoked.
+  iam_instance_profile = "VPNServerProfile_${var.conflictkey}"
   instance_type        = var.instance_type
   key_name             = var.aws_key_name
   subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
