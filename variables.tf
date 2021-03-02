@@ -16,7 +16,7 @@ variable "example_role_name" {
 variable "consul_cluster_name" {
   description = "What to name the Consul server cluster and all of its associated resources"
   type        = string
-  default     = "consul-example"
+  # default     = "consul-example"
 }
 
 variable "consul_cluster_tag_key" {
