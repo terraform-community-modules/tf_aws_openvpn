@@ -106,8 +106,6 @@ grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostK
 grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
 sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
 
-set -x
-
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
 private_subnet1=${private_subnet1}
@@ -161,7 +159,6 @@ echo "Storing keys with vault..."
 set +x
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
-set -x
 
 function retrieve_file {
   local -r file_path="$1"
