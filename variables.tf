@@ -79,32 +79,32 @@ variable "instance_type" {
 variable "openvpn_user" {
 }
 
-variable "openvpn_user_pw" {
-  description = "The user password used to login to Open VPN Access Server."
-  type = string
-  validation {
-    condition = (
-      length(var.openvpn_user_pw) >= 8
-    )
-    error_message = "The openvpn_user_pw configured in vault must be at least 8 characters in length."
-  }
-}
+# variable "openvpn_user_pw" {
+#   description = "The user password used to login to Open VPN Access Server."
+#   type = string
+#   validation {
+#     condition = (
+#       length(var.openvpn_user_pw) >= 8
+#     )
+#     error_message = "The openvpn_user_pw configured in vault must be at least 8 characters in length."
+#   }
+# }
 
 variable "openvpn_admin_user" {
   description = "The admin user name used to configure OpenVPN Access Server"
   default = "openvpnas"
 }
 
-variable "openvpn_admin_pw" {
-  description = "The admin password used to login to Open VPN Access Server."
-  type = string
-  validation {
-    condition = (
-      length(var.openvpn_admin_pw) >= 8
-    )
-    error_message = "The openvpn_admin_pw configured in vault must be at least 8 characters in length."
-  }
-}
+# variable "openvpn_admin_pw" {
+#   description = "The admin password used to login to Open VPN Access Server."
+#   type = string
+#   validation {
+#     condition = (
+#       length(var.openvpn_admin_pw) >= 8
+#     )
+#     error_message = "The openvpn_admin_pw configured in vault must be at least 8 characters in length."
+#   }
+# }
 
 variable "use_eip" {
   description = "Allows the provisioning of an elsatice IP"

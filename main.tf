@@ -256,9 +256,9 @@ data "template_file" "user_data_auth_client" {
     consul_cluster_tag_value = var.consul_cluster_name
     example_role_name        = var.example_role_name
     openvpn_admin_user       = var.openvpn_admin_user
-    openvpn_admin_pw         = var.openvpn_admin_pw
+    # openvpn_admin_pw         = var.openvpn_admin_pw
     openvpn_user             = var.openvpn_user
-    openvpn_user_pw          = var.openvpn_user_pw
+    # openvpn_user_pw          = var.openvpn_user_pw
     resourcetier             = var.resourcetier
     vault_token              = vault_token.vpn_admin.client_token
 
