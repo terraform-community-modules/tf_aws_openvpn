@@ -8,6 +8,11 @@ variable "pipelineid" {
     type = string
     default = "0"
 }
+
+variable "conflictkey" {
+    description = "The conflictkey is a unique name for each deployement usuallly consisting of the resourcetier and the pipeid."
+    type = string
+}
 variable "example_role_name" {
   description = "The name of the vault role. (Note: This is not the AWS role name.)"
   type        = string
