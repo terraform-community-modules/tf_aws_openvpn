@@ -4,12 +4,13 @@
 # built from the Packer template in examples/vault-consul-ami/vault-consul.json.
 
 set -e
+set +o history
 
-admin_user="${openvpn_admin_user}"
-admin_pw="$(openssl rand -base64 12)" # auto generate instance pass and store in vault after vault login.
-openvpn_user="${openvpn_user}" # TODO temporary use of admin for testing. Should be replaced with another user.
-openvpn_user_pw="$(openssl rand -base64 12)"
-resourcetier="${resourcetier}"
+ admin_user="${openvpn_admin_user}"
+ admin_pw="$(openssl rand -base64 12)" # auto generate instance pass and store in vault after vault login.
+ openvpn_user="${openvpn_user}" # TODO temporary use of admin for testing. Should be replaced with another user.
+ openvpn_user_pw="$(openssl rand -base64 12)"
+ resourcetier="${resourcetier}"
 # TODO these will be replaced with calls to vault.
 
 # Send the log output from this script to user-data.log, syslog, and the console
@@ -158,8 +159,8 @@ ls -la seperate
 
 echo "Storing keys with vault..."
 
-vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
-vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
+ vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
+ vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
 
 function retrieve_file {
   local -r file_path="$1"
@@ -212,4 +213,5 @@ for filename in /usr/local/openvpn_as/scripts/seperate/*; do
     store_file "$filename"
 done
 
+set -o history
 echo "Done."
