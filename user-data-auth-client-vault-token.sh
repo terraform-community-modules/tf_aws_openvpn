@@ -192,7 +192,7 @@ function store_file {
     else
         octal_permissions=$(sudo stat --format '%a' $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev) # clip to 4 zeroes
     fi
-    octal_permissions=$( python -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
+    octal_permissions=$( python3 -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
     vault kv patch -address="$VAULT_ADDR" -format=json $target permissions="$octal_permissions"
     file_uid="$(sudo stat --format '%u' $file_path)"
     vault kv patch -address="$VAULT_ADDR" -format=json $target owner="$(sudo id -un -- $file_uid)"
