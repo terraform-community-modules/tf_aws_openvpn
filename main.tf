@@ -202,13 +202,23 @@ resource "null_resource" "bastion_dependency" {
 #   value = local.ami
 # }
 
+data "terraform_remote_state" "openvpn_profile" { # read the arn with data.terraform_remote_state.packer_profile.outputs.instance_role_arn, or read the profile name with data.terraform_remote_state.packer_profile.outputs.instance_profile_name
+  backend = "s3"
+  config = {
+    bucket = "state.terraform.${var.bucket_extension_vault}"
+    key    = "${var.resourcetier_vault}/${var.vpcname_vault}-terraform-aws-iam-profile-openvpn/terraform.tfstate"
+    region = data.aws_region.current.name
+  }
+}
+
 resource "aws_instance" "openvpn" {
   count      = var.create_vpn ? 1 : 0
   depends_on = [null_resource.gateway_dependency, null_resource.bastion_dependency]
   ami        = var.ami
   # ami               = local.ami
   # needs VPNServerRole_${var.conflictkey}
-  iam_instance_profile = "VPNServerProfile_${var.conflictkey}"
+  # iam_instance_profile = "VPNServerProfile_${var.conflictkey}"
+  iam_instance_profile = data.terraform_remote_state.openvpn_profile.instance_profile_name
   instance_type        = var.instance_type
   key_name             = var.aws_key_name
   subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
