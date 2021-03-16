@@ -166,15 +166,19 @@ variable "private_domain_name" {}
 
 variable "ami" {}
 
-variable "bucket_extension_vault" {
-    description = "The bucket extension where the terraform remote state resides"
-    type = string
+variable "iam_instance_profile_name" {
+  description = "The name of the instance profile to attach to the VPN"
+  type = string
 }
-variable "resourcetier_vault" {
-    description = "The resourcetier the desired vault vpc resides in"
-    type = string
-}
-variable "vpcname_vault" {
-    description = "A namespace component defining the location of the terraform remote state"
-    type = string
-}
+# variable "bucket_extension_vault" {
+#     description = "The bucket extension where the terraform remote state resides"
+#     type = string
+# }
+# variable "resourcetier_vault" {
+#     description = "The resourcetier the desired vault vpc resides in"
+#     type = string
+# }
+# variable "vpcname_vault" {
+#     description = "A namespace component defining the location of the terraform remote state"
+#     type = string
+# }
