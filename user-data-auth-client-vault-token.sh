@@ -73,6 +73,9 @@ retry \
   "vault login  --no-print ${vault_token}" \
   "Waiting for Vault login"
 
+log "vault token capabilities $resourcetier"
+vault token capabilities $resourcetier
+
 log "Request Vault sign's the SSH host key and becomes a known host for other machines."
 # Allow access from clients signed by the CA.
 trusted_ca="/etc/ssh/trusted-user-ca-keys.pem"
