@@ -176,6 +176,7 @@ data "template_file" "user_data_auth_client" {
     public_subnet1             = element(var.public_subnets, 0)
     aws_internal_domain        = ".consul"
     onsite_private_subnet_cidr = var.onsite_private_subnet_cidr
+    vault_token                = "" # disabled since using IAM auth method
     # vault_token              = vault_token.vpn_admin.client_token
     # openvpn_admin_pw         = var.openvpn_admin_pw
     # openvpn_user_pw          = var.openvpn_user_pw
