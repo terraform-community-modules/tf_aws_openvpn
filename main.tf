@@ -112,96 +112,6 @@ resource "null_resource" "bastion_dependency" {
     bastion_dependency = var.bastion_dependency
   }
 }
-
-# These filters below aquire the ami for your region.  If they are not working in your region try running:
-# aws ec2 describe-images --image-ids {image id}
-# and then progress to filtering from that information instead of the image id:
-# aws ec2 describe-images --filters "Name=name,Values=OpenVPN Access Server 2.7.5-*"
-# ... and update the filters appropriately
-# We dont use image id's directly because they dont work in multiple regions.
-
-# data "aws_ami" "openvpn_2_8" {
-#   # aws_ami function with most_recent is best when seeking a single ami, like the latest version from filters known to produce output.
-#   count = 1
-#   most_recent      = true
-#   owners = ["679593333241"] # The account id
-
-#   filter {
-#     name   = "description"
-#     values = ["OpenVPN Access Server 2.8.3 publisher image from https://www.openvpn.net/."] # The * replaces part of the serial that varies by region.
-#   }
-
-#   filter {
-#     name   = "product-code"
-#     values = ["f2ew2wrz425a1jagnifd02u5t"]
-#   }
-# }
-
-# variable "allow_prebuilt_openvpn_access_server_ami" {
-#   default = false
-# }
-
-# variable "openvpn_access_server_ami_option" { # Where multiple data aws_ami queries are available, this allows us to select one.
-#   default = "openvpn_2_8"
-# }
-
-# locals {
-#   keys = ["openvpn_2_8"] # Where multiple data aws_ami queries are available, this is the full list of options.
-#   empty_list = list("")
-#   values = [element( concat(data.aws_ami.openvpn_2_8.*.id, local.empty_list ), 0 )] # the list of ami id's
-#   openvpn_access_server_consumption_map = zipmap( local.keys , local.values )
-# }
-
-# locals { # select the found ami to use based on the map lookup
-#   base_ami = lookup(local.openvpn_access_server_consumption_map, var.openvpn_access_server_ami_option)
-# }
-
-# data "aws_ami_ids" "prebuilt_openvpn_access_server_ami_list" { # search for a prebuilt tagged ami with the same base image.  if there is a match, it can be used instead, allowing us to skip provisioning.
-#   # aws_ami_ids function produces a list matching the filters.
-#   owners = ["self"]
-#   filter {
-#     name   = "tag:base_ami"
-#     values = [local.base_ami]
-#   }
-#   filter {
-#     name = "name"
-#     values = ["openvpn_access_server_prebuilt_*"]
-#   }
-# }
-
-# locals {
-#   prebuilt_openvpn_access_server_ami_list = data.aws_ami_ids.prebuilt_openvpn_access_server_ami_list.ids
-#   first_element = element( data.aws_ami_ids.prebuilt_openvpn_access_server_ami_list.*.ids, 0)
-#   mod_list = concat( local.prebuilt_openvpn_access_server_ami_list , list("") )
-#   aquired_ami      = element( local.mod_list , 0) # aquired ami will use the ami in the list if found, otherwise it will default to the original ami.
-#   use_prebuilt_openvpn_access_server_ami = var.allow_prebuilt_openvpn_access_server_ami && length(local.mod_list) > 1 ? true : false
-#   ami = local.use_prebuilt_openvpn_access_server_ami ? local.aquired_ami : local.base_ami
-# }
-
-# output "base_ami" {
-#   value = local.base_ami
-# }
-
-# output "prebuilt_openvpn_access_server_ami_list" {
-#   value = local.prebuilt_openvpn_access_server_ami_list
-# }
-
-# output "first_element" {
-#   value = local.first_element
-# }
-
-# output "aquired_ami" {
-#   value = local.aquired_ami
-# }
-
-# output "use_prebuilt_openvpn_access_server_ami" {
-#   value = local.use_prebuilt_openvpn_access_server_ami
-# }
-
-# output "ami" {
-#   value = local.ami
-# }
-
 resource "aws_instance" "openvpn" {
   count      = var.create_vpn ? 1 : 0
   depends_on = [null_resource.gateway_dependency, null_resource.bastion_dependency]
@@ -242,34 +152,33 @@ resource "aws_instance" "openvpn" {
 #   role    = "vpn-server-vault-iam-creds-role"
 # }
 
-resource "vault_token" "vpn_admin" {
-  # dynamically generate a token with constrained permisions for the vpn role.
-  role_name = "vpn-server-vault-token-creds-role"
-  policies = ["vpn_server","ssh_host"]
-  renewable        = false
-  explicit_max_ttl = "600s"
-}
+# resource "vault_token" "vpn_admin" {
+#   # dynamically generate a token with constrained permisions for the vpn role.
+#   role_name = "vpn-server-vault-token-creds-role"
+#   policies = ["vpn_server","ssh_host"]
+#   renewable        = false
+#   explicit_max_ttl = "600s"
+# }
 
 data "template_file" "user_data_auth_client" {
   template = file("${path.module}/user-data-auth-client-vault-token.sh")
 
   vars = {
-    consul_cluster_tag_key   = var.consul_cluster_tag_key
-    consul_cluster_tag_value = var.consul_cluster_name
-    example_role_name        = var.example_role_name
-    openvpn_admin_user       = var.openvpn_admin_user
+    consul_cluster_tag_key     = var.consul_cluster_tag_key
+    consul_cluster_tag_value   = var.consul_cluster_name
+    example_role_name          = var.example_role_name
+    openvpn_admin_user         = var.openvpn_admin_user
+    openvpn_user               = var.openvpn_user
+    resourcetier               = var.resourcetier
+    client_network             = element(split("/", var.vpn_cidr), 0)
+    client_netmask_bits        = element(split("/", var.vpn_cidr), 1)
+    private_subnet1            = element(var.private_subnets, 0)
+    public_subnet1             = element(var.public_subnets, 0)
+    aws_internal_domain        = ".consul"
+    onsite_private_subnet_cidr = var.onsite_private_subnet_cidr
+    # vault_token              = vault_token.vpn_admin.client_token
     # openvpn_admin_pw         = var.openvpn_admin_pw
-    openvpn_user             = var.openvpn_user
     # openvpn_user_pw          = var.openvpn_user_pw
-    resourcetier             = var.resourcetier
-    vault_token              = vault_token.vpn_admin.client_token
-
-    client_network      = element(split("/", var.vpn_cidr), 0)
-    client_netmask_bits = element(split("/", var.vpn_cidr), 1)
-    private_subnet1     = element(var.private_subnets, 0)
-    public_subnet1      = element(var.public_subnets, 0)
-    aws_internal_domain = ".consul"
-    onsite_private_subnet_cidr  = var.onsite_private_subnet_cidr
   }
 }
 
@@ -289,7 +198,7 @@ resource "aws_eip" "openvpnip" {
 #wakeup a node after sleep
 
 locals {
-  startup = (! var.sleep && var.create_vpn) ? 1 : 0
+  startup = (!var.sleep && var.create_vpn) ? 1 : 0
 }
 output "startup" {
   value = local.startup
@@ -328,7 +237,7 @@ EOT
 
 locals {
   private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip         = element(concat( var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip , list("")), 0)
+  public_ip         = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
   id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip

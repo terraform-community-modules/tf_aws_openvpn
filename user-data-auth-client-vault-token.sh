@@ -63,17 +63,32 @@ private_ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4); echo "Pri
 # export VAULT_TOKEN=$token
 export VAULT_ADDR=https://vault.service.consul:8200
 
-# # Start the Vault agent
-# # /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
-
+# Vault Agent IAM Auth Method
+/opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
 # Retry and wait for the Vault Agent to write the token out to a file.  This could be
 # because the Vault server is still booting and unsealing, or because run-consul
 # running on the background didn't finish yet
 retry \
-  "vault login  --no-print ${vault_token}" \
-  "Waiting for Vault login"
+  "[[ -s /opt/vault/data/vault-token ]] && echo 'vault token file created'" \
+  "waiting for Vault agent to write out token to sink"
+# We can then use the client token from the login output once login was successful
+token=$(cat /opt/vault/data/vault-token)
+# And use the token to perform operations on vault such as reading a secret
+# These is being retried because race conditions were causing this to come up null sometimes
+# response=$(retry \
+#   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
+#   "Trying to read secret from vault")
+# Vault CLI alternative:
+export VAULT_TOKEN=$token
 
-log "vault token capabilities $resourcetier"
+# Vault Auth Token Method - passed by terraform
+# export VAULT_TOKEN=${vault_token}
+# # Retry and wait for the Vault Agent to write the token out to a file.  This could be
+# # because the Vault server is still booting and unsealing, or because run-consul
+# # running on the background didn't finish yet
+retry \
+  "vault login --no-print $VAULT_TOKEN" \
+  "Waiting for Vault login"
 
 log "Request Vault sign's the SSH host key and becomes a known host for other machines."
 # Allow access from clients signed by the CA.
@@ -108,6 +123,7 @@ grep -q "^HostKey /etc/ssh/ssh_host_rsa_key" /etc/ssh/sshd_config || echo 'HostK
 grep -q "^HostCertificate" /etc/ssh/sshd_config || echo 'HostCertificate' | tee --append /etc/ssh/sshd_config
 sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g' /etc/ssh/sshd_config
 
+# Configure VPN Gateway
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
 private_subnet1=${private_subnet1}
