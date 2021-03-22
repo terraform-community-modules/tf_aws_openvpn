@@ -290,3 +290,6 @@ done
 
 set -o history
 echo "Done."
+
+log "Revoking vault token..."
+vault token revoke -self
