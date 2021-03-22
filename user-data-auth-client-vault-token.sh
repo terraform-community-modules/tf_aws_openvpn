@@ -63,32 +63,91 @@ private_ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4); echo "Pri
 # export VAULT_TOKEN=$token
 export VAULT_ADDR=https://vault.service.consul:8200
 
-# Vault Agent IAM Auth Method
-/opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
-# Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# because the Vault server is still booting and unsealing, or because run-consul
-# running on the background didn't finish yet
+
+### Vault Auth IAM Method CLI
 retry \
-  "[[ -s /opt/vault/data/vault-token ]] && echo 'vault token file created'" \
-  "waiting for Vault agent to write out token to sink"
-# We can then use the client token from the login output once login was successful
-token=$(cat /opt/vault/data/vault-token)
-# And use the token to perform operations on vault such as reading a secret
-# These is being retried because race conditions were causing this to come up null sometimes
+  "vault login --no-print -method=aws header_value=vault.service.consul role=${example_role_name}" \
+  "Waiting for Vault login"
+
+
+# ### Vault Signed Request with IAM Role
+# # Creating a signed request to AWS Security Token Service (STS) API with header of server ID "vault.service.consul"
+# # This request is to the method GetCallerIdentity of STS, which answers the question "who am I?"
+# # This python script creates the STS request, gets the necessary AWS credentials and signs the request with them
+# # Using python here instead of doing this in bash to take advantage of python's AWS SDK boto3, which facilitates this work a lot
+# # You can find this script at /examples/vault-consul-ami/auth/sign-request.py
+# signed_request=$(python /opt/vault/scripts/sign-request.py vault.service.consul)
+# iam_request_url=$(echo $signed_request | jq -r .iam_request_url)
+# iam_request_body=$(echo $signed_request | jq -r .iam_request_body)
+# iam_request_headers=$(echo $signed_request | jq -r .iam_request_headers)
+# # The role name necessary here is the Vault Role name, not the AWS IAM Role name
+# # This variable is filled by terraform
+# data=$(cat <<EOF
+# {
+#   "role":"${example_role_name}",
+#   "iam_http_request_method": "POST",
+#   "iam_request_url": "$iam_request_url",
+#   "iam_request_body": "$iam_request_body",
+#   "iam_request_headers": "$iam_request_headers"
+# }
+# EOF
+# )
+# # We send this signed request to the Vault server
+# # And the Vault server will execute this request to validate this origin with AWS
+# # Retry in case the vault server is still booting and unsealing
+# # Or in case run-consul running on the background didn't finish yet
+# login_output=$(retry \
+#   "curl --fail --request POST --data '$data' https://vault.service.consul:8200/v1/auth/aws/login" \
+#   "Trying to login to vault")
+# # If vault cli is installed we can also perform these operations with vault cli
+# # The VAULT_ADDR environment variable has to be set
+# # This assumes you have AWS credentials configured in the standard locations
+# # (environment variables, ~/.aws/credentials, IAM instance profile, or ECS task role, in that order).
+# # vault login -method=aws header_value=vault.service.consul role="${example_role_name}"
+# # We can then use the client token from the login output once login was successful
+# token=$(echo $login_output | jq -r .auth.client_token)
+# # And use the token to perform operations on vault such as reading a secret
+# # These is being retried because race conditions were causing this to come up null sometimes
 # response=$(retry \
 #   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
 #   "Trying to read secret from vault")
-# Vault CLI alternative:
-export VAULT_TOKEN=$token
+# # Vault cli alternative:
+# # export VAULT_TOKEN=$token
+# # export VAULT_ADDR=https://vault.service.consul:8200
+# # /opt/vault/bin/vault read secret/example_gruntwork
+# # Serves the answer in a web server so we can test that this auth client is
+# # authenticating to vault and fetching data correctly
+# echo $response | jq -r .data.the_answer > index.html
+# python -m SimpleHTTPServer 8080 &
 
-# Vault Auth Token Method - passed by terraform
-# export VAULT_TOKEN=${vault_token}
+
+# ### Vault Agent IAM Auth Method
+# /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
 # # Retry and wait for the Vault Agent to write the token out to a file.  This could be
 # # because the Vault server is still booting and unsealing, or because run-consul
 # # running on the background didn't finish yet
-retry \
-  "vault login --no-print $VAULT_TOKEN" \
-  "Waiting for Vault login"
+# retry \
+#   "[[ -s /opt/vault/data/vault-token ]] && echo 'vault token file created'" \
+#   "waiting for Vault agent to write out token to sink"
+# # We can then use the client token from the login output once login was successful
+# token=$(cat /opt/vault/data/vault-token)
+# # And use the token to perform operations on vault such as reading a secret
+# # These is being retried because race conditions were causing this to come up null sometimes
+# # response=$(retry \
+# #   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
+# #   "Trying to read secret from vault")
+# # Vault CLI alternative:
+# export VAULT_TOKEN=$token
+
+# ### Vault Auth Token Method - passed by terraform ###
+# # export VAULT_TOKEN=${vault_token}
+# # # Retry and wait for the Vault Agent to write the token out to a file.  This could be
+# # # because the Vault server is still booting and unsealing, or because run-consul
+# # # running on the background didn't finish yet
+# # login with token
+# retry \
+#   "vault login --no-print $VAULT_TOKEN" \
+#   "Waiting for Vault login"
 
 log "Request Vault sign's the SSH host key and becomes a known host for other machines."
 # Allow access from clients signed by the CA.
