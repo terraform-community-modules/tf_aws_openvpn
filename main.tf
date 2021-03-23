@@ -109,6 +109,10 @@ resource "aws_eip" "openvpnip" {
 
 locals {
   startup = (!var.sleep && var.create_vpn) ? 1 : 0
+  extra_tags = {
+    role  = "vpn"
+    route = "public"
+  }
 }
 output "startup" {
   value = local.startup
