@@ -5,7 +5,7 @@ variable "resourcetier" {
 
 variable "security_group_attachments" {
   description = "The Security Group ID to attach to this instance"
-  type        = string
+  type        = list( string )
 }
 
 variable "pipelineid" {
