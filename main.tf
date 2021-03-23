@@ -60,15 +60,6 @@ resource "aws_instance" "openvpn" {
 #   backend = "aws"
 #   role    = "vpn-server-vault-iam-creds-role"
 # }
-
-# resource "vault_token" "vpn_admin" {
-#   # dynamically generate a token with constrained permisions for the vpn role.
-#   role_name = "vpn-server-vault-token-creds-role"
-#   policies = ["vpn_server","ssh_host"]
-#   renewable        = false
-#   explicit_max_ttl = "600s"
-# }
-
 data "template_file" "user_data_auth_client" {
   template = file("${path.module}/user-data-auth-client-vault-token.sh")
 
