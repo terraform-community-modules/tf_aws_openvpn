@@ -1,17 +1,22 @@
 variable "resourcetier" {
-    description = "The resource tier speicifies a unique name for a resource based on the environment.  eg:  dev, green, blue, main."
-    type = string
+  description = "The resource tier speicifies a unique name for a resource based on the environment.  eg:  dev, green, blue, main."
+  type        = string
+}
+
+variable "security_group_attachments" {
+  description = "The Security Group ID to attach to this instance"
+  type        = string
 }
 
 variable "pipelineid" {
-    description = "The pipelineid variable can be used to uniquely specify and identify resource names for a given deployment.  The pipeline ID could be set to a job ID in CI software for example.  The default of 0 is fine if no more than one concurrent deployment run will occur."
-    type = string
-    default = "0"
+  description = "The pipelineid variable can be used to uniquely specify and identify resource names for a given deployment.  The pipeline ID could be set to a job ID in CI software for example.  The default of 0 is fine if no more than one concurrent deployment run will occur."
+  type        = string
+  default     = "0"
 }
 
 variable "conflictkey" {
-    description = "The conflictkey is a unique name for each deployement usuallly consisting of the resourcetier and the pipeid."
-    type = string
+  description = "The conflictkey is a unique name for each deployement usuallly consisting of the resourcetier and the pipeid."
+  type        = string
 }
 variable "example_role_name" {
   description = "The name of the vault role. (Note: This is not the AWS role name.)"
@@ -31,7 +36,7 @@ variable "consul_cluster_tag_key" {
 }
 variable "name" {
   default = "openvpn"
-  type = string
+  type    = string
 }
 
 variable "create_vpn" {}
@@ -62,14 +67,14 @@ variable "aws_key_name" {
 
 variable "use_bastion" {
   description = "If enabled, will open ssh ports to a bastion host for provisioning.  This shouldn't be required if provisioning via private subnet."
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "bastion_ip" {
   description = "The IP address of the bastion for access"
-  type = string
-  default = "none"
+  type        = string
+  default     = "none"
 }
 
 # variable "private_key" {
@@ -97,7 +102,7 @@ variable "openvpn_user" {
 
 variable "openvpn_admin_user" {
   description = "The admin user name used to configure OpenVPN Access Server"
-  default = "openvpnas"
+  default     = "openvpnas"
 }
 
 # variable "openvpn_admin_pw" {
@@ -113,8 +118,8 @@ variable "openvpn_admin_user" {
 
 variable "use_eip" {
   description = "Allows the provisioning of an elsatice IP"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "vpn_cidr" {
@@ -168,7 +173,7 @@ variable "ami" {}
 
 variable "iam_instance_profile_name" {
   description = "The name of the instance profile to attach to the VPN"
-  type = string
+  type        = string
 }
 # variable "bucket_extension_vault" {
 #     description = "The bucket extension where the terraform remote state resides"
@@ -178,7 +183,7 @@ variable "iam_instance_profile_name" {
 #     description = "The resourcetier the desired vault vpc resides in"
 #     type = string
 # }
-# variable "vpcname_vault" {
+# variable "vpcname_vaultvpc" {
 #     description = "A namespace component defining the location of the terraform remote state"
 #     type = string
 # }

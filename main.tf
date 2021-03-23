@@ -4,98 +4,7 @@
 
 # You should define this variable as your remote static ip adress to limit vpn exposure to the public internet
 
-variable "common_tags" {}
-locals {
-  extra_tags = {
-    role  = "vpn"
-    route = "public"
-  }
-}
 
-resource "aws_security_group" "openvpn" {
-  count       = var.create_vpn ? 1 : 0
-  name        = var.name
-  vpc_id      = var.vpc_id
-  description = "OpenVPN security group"
-
-  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
-
-  ingress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = [var.vpc_cidr, var.vpn_cidr, var.onsite_private_subnet_cidr]
-
-    description = "all incoming traffic from vpc, vpn dhcp, and remote subnet"
-  }
-
-  # For OpenVPN Client Web Server & Admin Web UI
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
-    cidr_blocks = [var.remote_ssh_ip_cidr]
-    description = "ssh"
-  }
-  ingress {
-    protocol    = "tcp"
-    from_port   = 443
-    to_port     = 443
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-    description = "https"
-  }
-
-  # see  https://openvpn.net/vpn-server-resources/amazon-web-services-ec2-tiered-appliance-quick-start-guide/
-  ingress {
-    protocol    = "tcp"
-    from_port   = 943
-    to_port     = 943
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-    description = "admin ui"
-  }
-  ingress {
-    protocol    = "tcp"
-    from_port   = 945
-    to_port     = 945
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-    description = "admin ui"
-  }
-  ingress {
-    protocol    = "udp"
-    from_port   = 1194
-    to_port     = 1194
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-  }
-  ingress {
-    protocol    = "icmp"
-    from_port   = 8
-    to_port     = 0
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-    description = "icmp"
-  }
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = [var.remote_vpn_ip_cidr]
-    description = "all outgoing traffic to vpn client remote ip"
-  }
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = [var.vpc_cidr]
-    description = "all outgoing traffic to vpc"
-  }
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "all outgoing traffic to anywhere"
-  }
-}
 
 variable "source_dest_check" {
   default = true
@@ -126,7 +35,7 @@ resource "aws_instance" "openvpn" {
   subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
   source_dest_check    = var.source_dest_check
 
-  vpc_security_group_ids = [local.security_group_id]
+  vpc_security_group_ids = var.security_group_attachments
 
   root_block_device {
     delete_on_termination = true
@@ -240,7 +149,7 @@ locals {
   private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
   public_ip         = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
   id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
-  security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
+  # security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
   # private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
   # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
