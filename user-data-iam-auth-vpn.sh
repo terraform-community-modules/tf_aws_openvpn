@@ -234,12 +234,12 @@ ls -la seperate
 
 echo "Storing keys with vault..."
 # debug only
-set -x
-vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
-vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
-# set +x
-#  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
-#  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
+# set -x
+# vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
+# vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
+set +x
+ vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
+ vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
 
 function retrieve_file {
   local -r file_path="$1"

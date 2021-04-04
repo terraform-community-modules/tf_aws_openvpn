@@ -61,7 +61,7 @@ resource "aws_instance" "openvpn" {
 #   role    = "vpn-server-vault-iam-creds-role"
 # }
 data "template_file" "user_data_auth_client" {
-  template = file("${path.module}/user-data-auth-client-vault-token.sh")
+  template = file("${path.module}/user-data-iam-auth-vpn.sh")
 
   vars = {
     consul_cluster_tag_key     = var.consul_cluster_tag_key
