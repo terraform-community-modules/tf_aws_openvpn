@@ -167,7 +167,7 @@ variable "firehawk_init_dependency" {
 variable "private_route_table_ids" {}
 variable "public_route_table_ids" {}
 
-variable "private_domain_name" {}
+# variable "private_domain_name" {}
 
 variable "ami" {}
 
