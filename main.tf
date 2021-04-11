@@ -56,6 +56,7 @@ resource "aws_instance" "openvpn" {
 }
 
 locals {
+  resourcetier = var.resourcetier
   client_cert_file_path = "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
   client_cert_vault_path = "${local.resourcetier}/vpn/client_cert_files${local.client_cert_file_path}"
 }
@@ -73,7 +74,7 @@ data "template_file" "user_data_auth_client" {
     example_role_name          = var.example_role_name
     openvpn_admin_user         = var.openvpn_admin_user
     openvpn_user               = var.openvpn_user
-    resourcetier               = var.resourcetier
+    resourcetier               = local.resourcetier
     client_network             = element(split("/", var.vpn_cidr), 0)
     client_netmask_bits        = element(split("/", var.vpn_cidr), 1)
     combined_vpcs_cidr         = var.combined_vpcs_cidr
