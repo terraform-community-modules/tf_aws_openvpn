@@ -58,86 +58,12 @@ export AWS_DEFAULT_REGION=$(curl -s http://169.254.169.254/latest/meta-data/plac
 public_ip=$(curl http://169.254.169.254/latest/meta-data/public-ipv4); echo "Public IP: $public_ip"
 private_ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4); echo "Private IP: $private_ip"
 
-# If vault cli is installed we can also perform these operations with vault cli
-# The necessary environment variables have to be set
-# export VAULT_TOKEN=$token
 export VAULT_ADDR=https://vault.service.consul:8200
-
 
 ### Vault Auth IAM Method CLI
 retry \
   "vault login --no-print -method=aws header_value=vault.service.consul role=${example_role_name}" \
   "Waiting for Vault login"
-
-
-# ### Vault Signed Request with IAM Role
-# # Creating a signed request to AWS Security Token Service (STS) API with header of server ID "vault.service.consul"
-# # This request is to the method GetCallerIdentity of STS, which answers the question "who am I?"
-# # This python script creates the STS request, gets the necessary AWS credentials and signs the request with them
-# # Using python here instead of doing this in bash to take advantage of python's AWS SDK boto3, which facilitates this work a lot
-# # You can find this script at /examples/vault-consul-ami/auth/sign-request.py
-# signed_request=$(python /opt/vault/scripts/sign-request.py vault.service.consul)
-# iam_request_url=$(echo $signed_request | jq -r .iam_request_url)
-# iam_request_body=$(echo $signed_request | jq -r .iam_request_body)
-# iam_request_headers=$(echo $signed_request | jq -r .iam_request_headers)
-# # The role name necessary here is the Vault Role name, not the AWS IAM Role name
-# # This variable is filled by terraform
-# data=$(cat <<EOF
-# {
-#   "role":"${example_role_name}",
-#   "iam_http_request_method": "POST",
-#   "iam_request_url": "$iam_request_url",
-#   "iam_request_body": "$iam_request_body",
-#   "iam_request_headers": "$iam_request_headers"
-# }
-# EOF
-# )
-# # We send this signed request to the Vault server
-# # And the Vault server will execute this request to validate this origin with AWS
-# # Retry in case the vault server is still booting and unsealing
-# # Or in case run-consul running on the background didn't finish yet
-# login_output=$(retry \
-#   "curl --fail --request POST --data '$data' https://vault.service.consul:8200/v1/auth/aws/login" \
-#   "Trying to login to vault")
-# # If vault cli is installed we can also perform these operations with vault cli
-# # The VAULT_ADDR environment variable has to be set
-# # This assumes you have AWS credentials configured in the standard locations
-# # (environment variables, ~/.aws/credentials, IAM instance profile, or ECS task role, in that order).
-# # vault login -method=aws header_value=vault.service.consul role="${example_role_name}"
-# # We can then use the client token from the login output once login was successful
-# token=$(echo $login_output | jq -r .auth.client_token)
-# # And use the token to perform operations on vault such as reading a secret
-# # These is being retried because race conditions were causing this to come up null sometimes
-# response=$(retry \
-#   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
-#   "Trying to read secret from vault")
-# # Vault cli alternative:
-# # export VAULT_TOKEN=$token
-# # export VAULT_ADDR=https://vault.service.consul:8200
-# # /opt/vault/bin/vault read secret/example_gruntwork
-# # Serves the answer in a web server so we can test that this auth client is
-# # authenticating to vault and fetching data correctly
-# echo $response | jq -r .data.the_answer > index.html
-# python -m SimpleHTTPServer 8080 &
-
-
-# ### Vault Agent IAM Auth Method
-# /opt/vault/bin/run-vault --agent --agent-auth-type iam --agent-auth-role "${example_role_name}"
-# # Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# # because the Vault server is still booting and unsealing, or because run-consul
-# # running on the background didn't finish yet
-# retry \
-#   "[[ -s /opt/vault/data/vault-token ]] && echo 'vault token file created'" \
-#   "waiting for Vault agent to write out token to sink"
-# # We can then use the client token from the login output once login was successful
-# token=$(cat /opt/vault/data/vault-token)
-# # And use the token to perform operations on vault such as reading a secret
-# # These is being retried because race conditions were causing this to come up null sometimes
-# # response=$(retry \
-# #   "curl --fail -H 'X-Vault-Token: $token' -X GET https://vault.service.consul:8200/v1/secret/example_gruntwork" \
-# #   "Trying to read secret from vault")
-# # Vault CLI alternative:
-# export VAULT_TOKEN=$token
 
 
 log "Request Vault sign's the SSH host key and becomes a known host for other machines."
@@ -220,12 +146,7 @@ ls -la seperate
 /usr/local/openvpn_as/scripts/sacli ConfigQuery
 
 ### Store Generated keys and password with vault
-
 echo "Storing keys with vault..."
-# debug only
-# set -x
-# vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
-# vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
 set +x
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
@@ -235,58 +156,3 @@ vault token revoke -self
 
 set -o history
 echo "Done."
-
-# function retrieve_file {
-#   local -r file_path="$1"
-#   local -r response=$(retry \
-#   "vault kv get -format=json /$resourcetier/vpn/client_cert_files/$file_path" \
-#   "Trying to read secret from vault")
-#   mkdir -p $(dirname $file_path) # ensure the directory exists
-#   echo $response | jq -r .data.data.file > $file_path
-#   local -r permissions=$(echo $response | jq -r .data.data.permissions)
-#   local -r uid=$(echo $response | jq -r .data.data.uid)
-#   local -r gid=$(echo $response | jq -r .data.data.gid)
-#   echo "Setting:"
-#   echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-#   chown $uid:$gid $file_path
-#   chmod $permissions $file_path
-# }
-
-# function store_file {
-#   local -r file_path="$1"
-#   if [[ -z "$2" ]]; then
-#     local target="$resourcetier/vpn/client_cert_files/$file_path"
-#   else
-#     local target="$2"
-#   fi
-
-#   if sudo test -f "$file_path"; then
-#     # vault login -no-print -address="$VAULT_ADDR" -method=aws header_value=vault.service.consul role=provisioner-vault-role  
-#     vault kv put -address="$VAULT_ADDR" -format=json $target file="$(sudo cat $file_path)"
-#     if [[ "$OSTYPE" == "darwin"* ]]; then # Acquire file permissions.
-#         octal_permissions=$(sudo stat -f %A $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev ) # clip to 4 zeroes
-#     else
-#         octal_permissions=$(sudo stat --format '%a' $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev) # clip to 4 zeroes
-#     fi
-#     octal_permissions=$( python3 -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
-#     vault kv patch -address="$VAULT_ADDR" -format=json $target permissions="$octal_permissions"
-#     file_uid="$(sudo stat --format '%u' $file_path)"
-#     vault kv patch -address="$VAULT_ADDR" -format=json $target owner="$(sudo id -un -- $file_uid)"
-#     vault kv patch -address="$VAULT_ADDR" -format=json $target uid="$file_uid"
-#     file_gid="$(sudo stat --format '%g' $file_path)"
-#     vault kv patch -address="$VAULT_ADDR" -format=json $target gid="$file_gid"
-#   else
-#     print "Error: file not found: $file_path"
-#     exit 1
-#   fi
-# }
-
-# # Store generated certs in vault
-
-# for filename in /usr/local/openvpn_as/scripts/seperate/*; do
-#     store_file "$filename"
-# done
-
-
-
-
