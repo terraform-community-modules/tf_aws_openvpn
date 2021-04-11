@@ -64,22 +64,17 @@ data "template_file" "user_data_auth_client" {
   template = file("${path.module}/user-data-iam-auth-vpn.sh")
 
   vars = {
-    consul_cluster_tag_key     = var.consul_cluster_tag_key
-    consul_cluster_tag_value   = var.consul_cluster_name
-    example_role_name          = var.example_role_name
-    openvpn_admin_user         = var.openvpn_admin_user
-    openvpn_user               = var.openvpn_user
-    resourcetier               = var.resourcetier
-    client_network             = element(split("/", var.vpn_cidr), 0)
-    client_netmask_bits        = element(split("/", var.vpn_cidr), 1)
-    private_subnet1            = element(var.private_subnets, 0)
-    public_subnet1             = element(var.public_subnets, 0)
+    consul_cluster_tag_key   = var.consul_cluster_tag_key
+    consul_cluster_tag_value = var.consul_cluster_name
+    example_role_name        = var.example_role_name
+    openvpn_admin_user       = var.openvpn_admin_user
+    openvpn_user             = var.openvpn_user
+    resourcetier             = var.resourcetier
+    client_network           = element(split("/", var.vpn_cidr), 0)
+    client_netmask_bits      = element(split("/", var.vpn_cidr), 1)
+    combined_vpcs_cidr         = var.combined_vpcs_cidr
     aws_internal_domain        = ".consul"
     onsite_private_subnet_cidr = var.onsite_private_subnet_cidr
-    vault_token                = "" # disabled since using IAM auth method
-    # vault_token              = vault_token.vpn_admin.client_token
-    # openvpn_admin_pw         = var.openvpn_admin_pw
-    # openvpn_user_pw          = var.openvpn_user_pw
   }
 }
 
@@ -141,11 +136,11 @@ EOT
 }
 
 locals {
-  private_ip        = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip         = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
-  id                = element(concat(aws_instance.openvpn.*.id, list("")), 0)
+  private_ip = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
+  public_ip  = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
+  id         = element(concat(aws_instance.openvpn.*.id, list("")), 0)
   # security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
-  vpn_address       = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
+  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
   # private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
   # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
 }

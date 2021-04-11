@@ -139,15 +139,6 @@ retry \
 # # Vault CLI alternative:
 # export VAULT_TOKEN=$token
 
-# ### Vault Auth Token Method - passed by terraform ###
-# # export VAULT_TOKEN=${vault_token}
-# # # Retry and wait for the Vault Agent to write the token out to a file.  This could be
-# # # because the Vault server is still booting and unsealing, or because run-consul
-# # # running on the background didn't finish yet
-# # login with token
-# retry \
-#   "vault login --no-print $VAULT_TOKEN" \
-#   "Waiting for Vault login"
 
 log "Request Vault sign's the SSH host key and becomes a known host for other machines."
 # Allow access from clients signed by the CA.
@@ -185,8 +176,7 @@ sed -i 's@HostCertificate.*@HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub@g
 # Configure VPN Gateway
 client_network=${client_network}
 client_netmask_bits=${client_netmask_bits}
-private_subnet1=${private_subnet1}
-public_subnet1=${public_subnet1}
+combined_vpcs_cidr=${combined_vpcs_cidr}
 aws_internal_domain=${aws_internal_domain}
 onsite_private_subnet_cidr=${onsite_private_subnet_cidr}
 
@@ -200,15 +190,14 @@ ls -la /usr/local/openvpn_as/scripts/
 /usr/local/openvpn_as/scripts/sacli -k vpn.daemon.0.client.netmask_bits -v $client_netmask_bits ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.tls_auth' --value 'true' ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.gateway_access --value 'true' ConfigPut
-/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.0 --value "$private_subnet1" ConfigPut
-/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.1 --value "$public_subnet1" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.2 --value "$client_network/$client_netmask_bits" ConfigPut
+/usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_network.0 --value "$combined_vpcs_cidr" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key vpn.server.routing.private_access --value 'route' ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.client.routing.reroute_dns' --value 'true' ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.dhcp_option.domain' --value "$aws_internal_domain" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key 'vpn.server.routing.allow_private_nets_to_clients' --value 'true' ConfigPut
 
-# ensure listen on interaces at default. restore ip since the old one during ami build is now invalid.
+# ensure listen on interfaces at default. restore ip since the old one during ami build is now invalid.
 /usr/local/openvpn_as/scripts/sacli --key "vpn.daemon.0.server.ip_address" --value "all" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key "vpn.daemon.0.listen.ip_address" --value "all" ConfigPut
 /usr/local/openvpn_as/scripts/sacli --key "vpn.server.daemon.udp.port" --value "1194" ConfigPut

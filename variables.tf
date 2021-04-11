@@ -192,3 +192,8 @@ variable "common_tags" {
   description = "Common tags for all resources in a deployment run."
   type        = map(string)
 }
+
+variable "combined_vpcs_cidr" {
+  description = "Terraform will automatically configure multiple VPCs and subnets within this CIDR range for any resourcetier ( dev / green / blue / main )."
+  type        = string
+}
