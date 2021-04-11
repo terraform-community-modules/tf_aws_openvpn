@@ -151,7 +151,7 @@ retry \
 
 # /opt/vault/bin/vault read secret/example_gruntwork
 
-# vault kv get /${resourcetier}/files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
+# vault kv get /${resourcetier}/vpn/client_cert_files/usr/local/openvpn_as/scripts/seperate/ca.crt > /usr/local/openvpn_as/scripts/seperate/ca_test.crt
 
 # # Serves the answer in a web server so we can test that this auth client is
 # # authenticating to vault and fetching data correctly

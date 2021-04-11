@@ -233,7 +233,7 @@ set +x
 function retrieve_file {
   local -r file_path="$1"
   local -r response=$(retry \
-  "vault kv get -format=json /$resourcetier/files/$file_path" \
+  "vault kv get -format=json /$resourcetier/vpn/client_cert_files/$file_path" \
   "Trying to read secret from vault")
   mkdir -p $(dirname $file_path) # ensure the directory exists
   echo $response | jq -r .data.data.file > $file_path
@@ -249,7 +249,7 @@ function retrieve_file {
 function store_file {
   local -r file_path="$1"
   if [[ -z "$2" ]]; then
-    local target="$resourcetier/files/$file_path"
+    local target="$resourcetier/vpn/client_cert_files/$file_path"
   else
     local target="$2"
   fi

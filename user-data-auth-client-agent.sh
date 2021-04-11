@@ -75,7 +75,7 @@ token=$(cat /opt/vault/data/vault-token)
 export VAULT_TOKEN=$token
 
 response=$(retry \
-  "vault kv get -format=json /$resourcetier/files/usr/local/openvpn_as/scripts/seperate/ca.crt" \
+  "vault kv get -format=json /$resourcetier/vpn/client_cert_files/usr/local/openvpn_as/scripts/seperate/ca.crt" \
   "Trying to read secret from vault")
 
 # /opt/vault/bin/vault read secret/example_gruntwork
