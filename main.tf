@@ -55,26 +55,35 @@ resource "aws_instance" "openvpn" {
 
 }
 
-# data "vault_aws_access_credentials" "creds" {
-#   # dynamically generated AWS key.
-#   backend = "aws"
-#   role    = "vpn-server-vault-iam-creds-role"
-# }
+locals {
+  client_cert_file_path = "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
+  client_cert_vault_path = "${local.resourcetier}/vpn/client_cert_files${local.client_cert_file_path}"
+}
 data "template_file" "user_data_auth_client" {
-  template = file("${path.module}/user-data-iam-auth-vpn.sh")
+  template = format(
+    "%s%s%s",
+    file("${path.module}/user-data-iam-auth-vpn.sh"),
+    file("${path.module}/user-data-vault-store-file.sh"),
+    file("${path.module}/user-data-register-consul-service.sh")
+  )
 
   vars = {
-    consul_cluster_tag_key   = var.consul_cluster_tag_key
-    consul_cluster_tag_value = var.consul_cluster_name
-    example_role_name        = var.example_role_name
-    openvpn_admin_user       = var.openvpn_admin_user
-    openvpn_user             = var.openvpn_user
-    resourcetier             = var.resourcetier
-    client_network           = element(split("/", var.vpn_cidr), 0)
-    client_netmask_bits      = element(split("/", var.vpn_cidr), 1)
+    consul_cluster_tag_key     = var.consul_cluster_tag_key
+    consul_cluster_tag_value   = var.consul_cluster_name
+    example_role_name          = var.example_role_name
+    openvpn_admin_user         = var.openvpn_admin_user
+    openvpn_user               = var.openvpn_user
+    resourcetier               = var.resourcetier
+    client_network             = element(split("/", var.vpn_cidr), 0)
+    client_netmask_bits        = element(split("/", var.vpn_cidr), 1)
     combined_vpcs_cidr         = var.combined_vpcs_cidr
     aws_internal_domain        = ".consul"
     onsite_private_subnet_cidr = var.onsite_private_subnet_cidr
+
+    consul_service = "vpn"
+
+    client_cert_file_path  = local.client_cert_file_path
+    client_cert_vault_path = local.client_cert_vault_path
   }
 }
 
@@ -145,9 +154,6 @@ locals {
   # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
 }
 
-variable "route_public_domain_name" {
-}
-
 resource "aws_route53_record" "openvpn_record" {
   count   = var.route_public_domain_name && var.create_vpn ? 1 : 0
   zone_id = element(concat(list(var.route_zone_id), list("")), 0)
@@ -162,146 +168,7 @@ resource "null_resource" "firehawk_init_dependency" { # ensure that the firehawk
   }
 }
 
-# resource "null_resource" "provision_vpn" {
-#   count = var.create_vpn ? 1 : 0
-#   depends_on = [local.public_ip, aws_route53_record.openvpn_record, null_resource.firehawk_init_dependency]
-
-# #   triggers = {
-# #     instanceid = local.id
-# #     # If the address changes, the vpn must be provisioned again.
-# #     vpn_address = local.vpn_address
-# #   }
-
-#   provisioner "local-exec" {
-#     interpreter = ["/bin/bash", "-c"]
-#     command = <<EOT
-#       # . /vagrant/scripts/exit_test.sh
-#       export SHOWCOMMANDS=true; set -x
-#       cd /deployuser
-#       # sleep 60 # local wait until instance can be logged into
-# EOT
-#   }
-
-# provisioner "remote-exec" {
-#   connection {
-#     user = var.openvpn_admin_user
-#     host = local.public_ip
-#     private_key = var.private_key
-#     type    = "ssh"
-#     timeout = "10m"
-#   }
-#   inline = [
-#     "echo 'instance up'", # test connection
-#   ]
-# }
-
-#   ### START this segment is termporary to deal with a cloud init bug
-#   provisioner "remote-exec" {
-#     connection {
-#       user = var.openvpn_admin_user
-#       host = local.public_ip
-#       private_key = var.private_key
-#       type    = "ssh"
-#       timeout = "10m"
-#     }
-#     # this resolves update issue https://unix.stackexchange.com/questions/315502/how-to-disable-apt-daily-service-on-ubuntu-cloud-vm-image
-#     inline = [
-#       "export SHOWCOMMANDS=true; set -x",
-#       "lsb_release -a",
-#       "ps aux | grep [a]pt",
-#       "sudo cat /etc/systemd/system.conf",
-#       "sudo systemd-run --property='After=apt-daily.service apt-daily-upgrade.service' --wait /bin/true",
-#       "sudo apt-get -y update",
-#       "sudo apt-get -y install python3",
-#       "sudo apt-get -y install python-apt",
-#       "sudo fuser -v /var/cache/debconf/config.dat", # get info if anything else has a lock on this file
-#       "sudo chown openvpnas:openvpnas /home/openvpnas", # This must be a bug with 2.8.5 open vpn ami.
-#       "echo '...Finished bootstrapping'",
-#     ]
-#   }
-
-#   provisioner "local-exec" {
-#     interpreter = ["/bin/bash", "-c"]
-#     command = <<EOT
-#       . /vagrant/scripts/exit_test.sh
-#       export SHOWCOMMANDS=true; set -x
-#       cd /deployuser
-#       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 60
-# EOT
-#   }
-
-#   provisioner "remote-exec" {
-#     connection {
-#       user = var.openvpn_admin_user
-#       host = local.public_ip
-#       private_key = var.private_key
-#       type    = "ssh"
-#       timeout = "10m"
-#     }
-#     inline = [
-#       "echo 'instance up'",
-#     ]
-#   }
-
-#   provisioner "local-exec" {
-#     interpreter = ["/bin/bash", "-c"]
-#     command = <<EOT
-#       . /vagrant/scripts/exit_test.sh
-#       cd /deployuser
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-public-host.yaml -v --extra-vars "public_ip=${local.public_ip} public_address=${local.vpn_address} bastion_address=${var.bastion_ip} vpn_address=${local.vpn_address} set_vpn=true"; exit_test
-#       # ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip host_ip=${local.public_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_aws_private_key_path"; exit_test
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/ssh-add-private-host.yaml -v --extra-vars "private_ip=${local.private_ip} bastion_ip=${var.bastion_ip}"; exit_test
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/inventory-add.yaml -v --extra-vars "host_name=openvpnip_private group_name=role_openvpn_access_server host_ip=${local.private_ip} insert_ssh_key_string=ansible_ssh_private_key_file=$TF_VAR_aws_private_key_path"; exit_test
-#       aws ec2 reboot-instances --instance-ids ${aws_instance.openvpn[count.index].id} && sleep 30
-# EOT
-#   }
-#   provisioner "remote-exec" {
-#     connection {
-#       user        = var.openvpn_admin_user
-#       host        = local.public_ip
-#       private_key = var.private_key
-#       type        = "ssh"
-#       timeout     = "10m"
-#     }
-#     inline = [
-#       "echo 'instance up'",
-#       "sudo apt-get -y clean && sudo apt-get -y autoclean",
-#     ]
-#   }
-#   provisioner "local-exec" {
-#     interpreter = ["/bin/bash", "-c"]
-#     command = <<EOT
-#       . /vagrant/scripts/exit_test.sh
-#       echo "environment vars in this case seem to need to be pushed via the shell"
-#       echo "TF_VAR_onsite_private_subnet_cidr: $TF_VAR_onsite_private_subnet_cidr"
-#       echo "onsite_private_subnet_cidr: ${var.onsite_private_subnet_cidr}"
-#       echo "private_subnet1: ${element(var.private_subnets, 0)}"
-#       echo "public_subnet1: ${element(var.public_subnets, 0)}"
-#       set -x
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn.yaml -v --extra-vars "vpn_address=${local.vpn_address} private_domain_name=${var.private_domain_name} private_ip=${local.private_ip} private_subnet1=${element(var.private_subnets, 0)} public_subnet1=${element(var.public_subnets, 0)} onsite_private_subnet_cidr=${var.onsite_private_subnet_cidr} client_network=${element(split("/", var.vpn_cidr), 0)} client_netmask_bits=${element(split("/", var.vpn_cidr), 1)}"; exit_test
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v --extra-vars "variable_host=ansible_control variable_user=deployuser hostname=ansible_control ethernet_interface=eth1" # configure routes for ansible control to the gateway to test the connection
-
-#       if [[ "$TF_VAR_set_routes_on_workstation" = "true" ]]; then # Intended for a dev envoronment only where multiple parralel deployments may occur, we cant provision a router for each subnet
-#         ansible-playbook -i "$TF_VAR_inventory" ansible/node-centos-routes.yaml -v -v --extra-vars "variable_host=workstation1 variable_user=deployuser hostname=workstation1 ansible_ssh_private_key_file=$TF_VAR_onsite_workstation_private_ssh_key ethernet_interface=$TF_VAR_workstation_ethernet_interface"; exit_test
-#       fi
-
-#       sleep 30
-
-#       ansible-playbook -i "$TF_VAR_inventory" ansible/openvpn-restart-client.yaml
-
-#       sleep 30
-
-#       /vagrant/scripts/tests/test-openvpn.sh --ip "${local.private_ip}"; exit_test
-# EOT
-#   }
-# }
-
-variable "start_vpn" {
-  default = true
-}
-
 # route tables to send traffic to the remote subnet are configured once the vpn is provisioned.
-
 resource "aws_route" "private_openvpn_remote_subnet_gateway" {
   count      = var.create_vpn ? length(var.private_route_table_ids) : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]

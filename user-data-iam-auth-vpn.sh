@@ -230,59 +230,63 @@ set +x
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw value="$admin_pw"
  vault kv put -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_user_pw value="$openvpn_user_pw"
 
-function retrieve_file {
-  local -r file_path="$1"
-  local -r response=$(retry \
-  "vault kv get -format=json /$resourcetier/vpn/client_cert_files/$file_path" \
-  "Trying to read secret from vault")
-  mkdir -p $(dirname $file_path) # ensure the directory exists
-  echo $response | jq -r .data.data.file > $file_path
-  local -r permissions=$(echo $response | jq -r .data.data.permissions)
-  local -r uid=$(echo $response | jq -r .data.data.uid)
-  local -r gid=$(echo $response | jq -r .data.data.gid)
-  echo "Setting:"
-  echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
-  chown $uid:$gid $file_path
-  chmod $permissions $file_path
-}
-
-function store_file {
-  local -r file_path="$1"
-  if [[ -z "$2" ]]; then
-    local target="$resourcetier/vpn/client_cert_files/$file_path"
-  else
-    local target="$2"
-  fi
-
-  if sudo test -f "$file_path"; then
-    # vault login -no-print -address="$VAULT_ADDR" -method=aws header_value=vault.service.consul role=provisioner-vault-role  
-    vault kv put -address="$VAULT_ADDR" -format=json $target file="$(sudo cat $file_path)"
-    if [[ "$OSTYPE" == "darwin"* ]]; then # Acquire file permissions.
-        octal_permissions=$(sudo stat -f %A $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev ) # clip to 4 zeroes
-    else
-        octal_permissions=$(sudo stat --format '%a' $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev) # clip to 4 zeroes
-    fi
-    octal_permissions=$( python3 -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
-    vault kv patch -address="$VAULT_ADDR" -format=json $target permissions="$octal_permissions"
-    file_uid="$(sudo stat --format '%u' $file_path)"
-    vault kv patch -address="$VAULT_ADDR" -format=json $target owner="$(sudo id -un -- $file_uid)"
-    vault kv patch -address="$VAULT_ADDR" -format=json $target uid="$file_uid"
-    file_gid="$(sudo stat --format '%g' $file_path)"
-    vault kv patch -address="$VAULT_ADDR" -format=json $target gid="$file_gid"
-  else
-    print "Error: file not found: $file_path"
-    exit 1
-  fi
-}
-
-# Store generated certs in vault
-
-for filename in /usr/local/openvpn_as/scripts/seperate/*; do
-    store_file "$filename"
-done
+log "Revoking vault token..."
+vault token revoke -self
 
 set -o history
 echo "Done."
 
-log "Revoking vault token..."
-vault token revoke -self
+# function retrieve_file {
+#   local -r file_path="$1"
+#   local -r response=$(retry \
+#   "vault kv get -format=json /$resourcetier/vpn/client_cert_files/$file_path" \
+#   "Trying to read secret from vault")
+#   mkdir -p $(dirname $file_path) # ensure the directory exists
+#   echo $response | jq -r .data.data.file > $file_path
+#   local -r permissions=$(echo $response | jq -r .data.data.permissions)
+#   local -r uid=$(echo $response | jq -r .data.data.uid)
+#   local -r gid=$(echo $response | jq -r .data.data.gid)
+#   echo "Setting:"
+#   echo "uid:$uid gid:$gid permissions:$permissions file_path:$file_path"
+#   chown $uid:$gid $file_path
+#   chmod $permissions $file_path
+# }
+
+# function store_file {
+#   local -r file_path="$1"
+#   if [[ -z "$2" ]]; then
+#     local target="$resourcetier/vpn/client_cert_files/$file_path"
+#   else
+#     local target="$2"
+#   fi
+
+#   if sudo test -f "$file_path"; then
+#     # vault login -no-print -address="$VAULT_ADDR" -method=aws header_value=vault.service.consul role=provisioner-vault-role  
+#     vault kv put -address="$VAULT_ADDR" -format=json $target file="$(sudo cat $file_path)"
+#     if [[ "$OSTYPE" == "darwin"* ]]; then # Acquire file permissions.
+#         octal_permissions=$(sudo stat -f %A $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev ) # clip to 4 zeroes
+#     else
+#         octal_permissions=$(sudo stat --format '%a' $file_path | rev | sed -E 's/^([[:digit:]]{4})([^[:space:]]+)/\1/' | rev) # clip to 4 zeroes
+#     fi
+#     octal_permissions=$( python3 -c "print( \"$octal_permissions\".zfill(4) )" ) # pad to 4 zeroes
+#     vault kv patch -address="$VAULT_ADDR" -format=json $target permissions="$octal_permissions"
+#     file_uid="$(sudo stat --format '%u' $file_path)"
+#     vault kv patch -address="$VAULT_ADDR" -format=json $target owner="$(sudo id -un -- $file_uid)"
+#     vault kv patch -address="$VAULT_ADDR" -format=json $target uid="$file_uid"
+#     file_gid="$(sudo stat --format '%g' $file_path)"
+#     vault kv patch -address="$VAULT_ADDR" -format=json $target gid="$file_gid"
+#   else
+#     print "Error: file not found: $file_path"
+#     exit 1
+#   fi
+# }
+
+# # Store generated certs in vault
+
+# for filename in /usr/local/openvpn_as/scripts/seperate/*; do
+#     store_file "$filename"
+# done
+
+
+
+

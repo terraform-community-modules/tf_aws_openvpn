@@ -166,27 +166,12 @@ variable "firehawk_init_dependency" {
 
 variable "private_route_table_ids" {}
 variable "public_route_table_ids" {}
-
-# variable "private_domain_name" {}
-
 variable "ami" {}
 
 variable "iam_instance_profile_name" {
   description = "The name of the instance profile to attach to the VPN"
   type        = string
 }
-# variable "bucket_extension_vault" {
-#     description = "The bucket extension where the terraform remote state resides"
-#     type = string
-# }
-# variable "resourcetier_vault" {
-#     description = "The resourcetier the desired vault vpc resides in"
-#     type = string
-# }
-# variable "vpcname_vaultvpc" {
-#     description = "A namespace component defining the location of the terraform remote state"
-#     type = string
-# }
 
 variable "common_tags" {
   description = "Common tags for all resources in a deployment run."
@@ -196,4 +181,7 @@ variable "common_tags" {
 variable "combined_vpcs_cidr" {
   description = "Terraform will automatically configure multiple VPCs and subnets within this CIDR range for any resourcetier ( dev / green / blue / main )."
   type        = string
+}
+
+variable "route_public_domain_name" {
 }
