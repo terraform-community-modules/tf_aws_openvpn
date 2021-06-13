@@ -189,17 +189,14 @@ variable "route_public_domain_name" {
 variable "sqs_remote_in_vpn" {
   description = "The SQS queue URL for a remote client to observe messages to establish connection with the VPN Server."
   type = string
-  default = null
 }
 
 variable "host1" {
   description = "The user@publichost string to connect to the bastion host to aquire vpn credentials from Vault."
   type = string
-  default = null
 }
 
 variable "host2" {
   description = "The user@privatehost string to connect to the vault client to aquire vpn credentials from Vault."
   type = string
-  default = null
 }

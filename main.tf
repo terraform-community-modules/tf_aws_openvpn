@@ -221,7 +221,10 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 }
 
 resource "null_resource" "sqs_notify" {
-  count      = ( var.create_vpn && (var.sqs_remote_in_vpn != null) ) ? 1 : 0
+  count      = var.create_vpn  ? 1 : 0
+  triggers = {
+    instance_id = aws_instance.openvpn[count.index].id
+  }
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
   provisioner "local-exec" {
