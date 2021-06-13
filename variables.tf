@@ -193,13 +193,13 @@ variable "sqs_remote_in_vpn" {
 }
 
 variable "host1" {
-  decription = "The user@publichost string to connect to the bastion host to aquire vpn credentials from Vault."
+  description = "The user@publichost string to connect to the bastion host to aquire vpn credentials from Vault."
   type = string
   default = null
 }
 
 variable "host2" {
-  decription = "The user@privatehost string to connect to the vault client to aquire vpn credentials from Vault."
+  description = "The user@privatehost string to connect to the vault client to aquire vpn credentials from Vault."
   type = string
   default = null
 }
