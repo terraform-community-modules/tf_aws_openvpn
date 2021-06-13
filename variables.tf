@@ -55,8 +55,8 @@ variable "remote_ssh_ip_cidr" {
   description = "The IP used to ssh to the access server for admin."
 }
 
-variable "public_subnet_ids" {
-  default = []
+variable "public_subnet_id" {
+  default = null
 }
 
 # variable "cert_arn" {

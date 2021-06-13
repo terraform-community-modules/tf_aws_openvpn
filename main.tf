@@ -32,7 +32,7 @@ resource "aws_instance" "openvpn" {
   iam_instance_profile = var.iam_instance_profile_name
   instance_type        = var.instance_type
   key_name             = var.aws_key_name
-  subnet_id            = concat(sort(var.public_subnet_ids), list(""))[0]
+  subnet_id            = var.public_subnet_id
   source_dest_check    = var.source_dest_check
 
   vpc_security_group_ids = var.security_group_attachments
@@ -41,7 +41,7 @@ resource "aws_instance" "openvpn" {
     delete_on_termination = true
   }
 
-  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
+  tags = merge(tomap( {"Name" : var.name} ), var.common_tags, local.extra_tags)
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
   # https://docs.openvpn.net/how-to-tutorialsguides/virtual-platforms/amazon-ec2-appliance-ami-quick-start-guide/
@@ -97,7 +97,7 @@ resource "aws_eip" "openvpnip" {
   instance   = aws_instance.openvpn[count.index].id
   depends_on = [aws_instance.openvpn]
 
-  tags = merge(map("Name", var.name), var.common_tags, local.extra_tags)
+  tags = merge(tomap( {"Name" : var.name} ), var.common_tags, local.extra_tags)
 
 }
 
@@ -146,16 +146,16 @@ EOT
 }
 
 locals {
-  private_ip = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
-  public_ip  = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
-  id         = element(concat(aws_instance.openvpn.*.id, list("")), 0)
+  private_ip = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].private_ip : null
+  public_ip  = var.use_eip ? length( aws_eip.openvpnip ) > 0 ? aws_eip.openvpnip[0].public_ip : null : length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].public_ip : null
+  id         = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].id : null
   vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
 }
 
 resource "aws_route53_record" "openvpn_record" {
   count   = var.route_public_domain_name && var.create_vpn ? 1 : 0
-  zone_id = element(concat(list(var.route_zone_id), list("")), 0)
-  name    = element(concat(list("vpn.${var.public_domain_name}"), list("")), 0)
+  zone_id = try(var.route_zone_id, null)
+  name    = try("vpn.${var.public_domain_name}", null)
   type    = "A"
   ttl     = 300
   records = [local.public_ip]
@@ -171,7 +171,7 @@ resource "aws_route" "private_openvpn_remote_subnet_gateway" {
   count      = var.create_vpn ? length(var.private_route_table_ids) : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
-  route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
+  route_table_id         = element(var.private_route_table_ids, count.index)
   destination_cidr_block = var.onsite_private_subnet_cidr
   instance_id            = local.id
 
@@ -184,7 +184,7 @@ resource "aws_route" "public_openvpn_remote_subnet_gateway" {
   count      = var.create_vpn ? length(var.public_route_table_ids) : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
-  route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
+  route_table_id         = element(var.public_route_table_ids, count.index)
   destination_cidr_block = var.onsite_private_subnet_cidr
   instance_id            = local.id
 
@@ -198,7 +198,7 @@ resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
   count      = var.create_vpn ? length(var.private_route_table_ids) : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
-  route_table_id         = element(concat(var.private_route_table_ids, list("")), count.index)
+  route_table_id         = element(var.private_route_table_ids, count.index)
   destination_cidr_block = var.vpn_cidr
   instance_id            = local.id
 
@@ -211,7 +211,7 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
   count      = var.create_vpn ? length(var.public_route_table_ids) : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 
-  route_table_id         = element(concat(var.public_route_table_ids, list("")), count.index)
+  route_table_id         = element(var.public_route_table_ids, count.index)
   destination_cidr_block = var.vpn_cidr
   instance_id            = local.id
 
