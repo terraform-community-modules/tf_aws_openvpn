@@ -11,10 +11,11 @@ readonly sqs_queue_url="$2"
 readonly host1="$3"
 readonly host2="$4"
 
-readonly VAULT_ADDR="https://vault.service.consul:8200"
+# readonly VAULT_ADDR="https://vault.service.consul:8200"
+readonly VAULT_ADDR=https://vault.service.consul:8200
 
 openvpn_admin_pw="$(vault kv get -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw)"
-token="$(vault token create -address=\"$VAULT_ADDR\" -policy=vpn_read_config -policy=deadline_client -explicit-max-ttl=5m -ttl=5m -use-limit=4 -field=token)"
+token="$(vault token create -address="$VAULT_ADDR" -policy=vpn_read_config -policy=deadline_client -explicit-max-ttl=5m -ttl=5m -use-limit=4 -field=token)"
 
 file_content="<< EOF
 {
