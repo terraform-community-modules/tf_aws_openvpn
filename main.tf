@@ -149,10 +149,7 @@ locals {
   private_ip = element(concat(aws_instance.openvpn.*.private_ip, list("")), 0)
   public_ip  = element(concat(var.use_eip ? aws_eip.openvpnip.*.public_ip : aws_instance.openvpn.*.public_ip, list("")), 0)
   id         = element(concat(aws_instance.openvpn.*.id, list("")), 0)
-  # security_group_id = element(concat(aws_security_group.openvpn.*.id, list("")), 0)
   vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
-  # private_route_table_id         = element(concat(var.private_route_table_ids, list("")), 0)
-  # public_route_table_id         = element(concat(var.public_route_table_ids, list("")), 0)
 }
 
 resource "aws_route53_record" "openvpn_record" {
@@ -223,35 +220,18 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
   }
 }
 
-output "id" {
-  value      = local.id
+resource "null_resource" "sqs_notify" {
+  count      = ( var.create_vpn && (var.sqs_remote_in_vpn != null) ) ? 1 : 0
   depends_on = [local.public_ip, aws_route53_record.openvpn_record]
-  # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
-  #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
-  #   aws_route.public_openvpn_remote_subnet_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_gateway
-  # ]
-}
 
-output "private_ip" {
-  value      = local.private_ip
-  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
-  # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
-  #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
-  #   aws_route.public_openvpn_remote_subnet_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_gateway
-  # ]
-}
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<EOT
+      printf "\n...Waiting for consul vpn service before attempting SQS notify.\n\n"
+      until consul catalog services | grep -m 1 "vpn"; do sleep 10 ; done
 
-output "public_ip" {
-  value      = local.public_ip
-  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
-  # depends_on = [ # don't allow other nodes to attempt to use this information until the routes are configured
-  #   aws_route.public_openvpn_remote_subnet_vpndhcp_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_vpndhcp_gateway , 
-  #   aws_route.public_openvpn_remote_subnet_gateway, 
-  #   aws_route.private_openvpn_remote_subnet_gateway
-  # ]
+      # This might need to run after ssh auth generation instead.
+      scripts/sqs_notify.sh "${local.resourcetier}" "${var.sqs_remote_in_vpn}" "${var.host1}" "${var.host2}"
+EOT
+  }
 }
