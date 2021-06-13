@@ -234,7 +234,7 @@ resource "null_resource" "sqs_notify" {
       until consul catalog services | grep -m 1 "vpn"; do sleep 10 ; done
 
       # This might need to run after ssh auth generation instead.
-      scripts/sqs_notify.sh "${local.resourcetier}" "${var.sqs_remote_in_vpn}" "${var.host1}" "${var.host2}"
+      ${path.module}/scripts/sqs_notify.sh "${local.resourcetier}" "${var.sqs_remote_in_vpn}" "${var.host1}" "${var.host2}"
 EOT
   }
 }
