@@ -18,7 +18,7 @@ token="$(vault token create -address="$VAULT_ADDR" -policy=vpn_read_config -poli
 
 file_content="$(cat <<EOF
 {
-    "openvpn_admin_pw" : "$openvpn_admin_pw", 
+    "openvpn_admin_pw" : $openvpn_admin_pw, 
     "host1" : "$host1",
     "host2" : "$host2",
     "token" : "$token"
