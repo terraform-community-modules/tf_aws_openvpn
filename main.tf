@@ -230,9 +230,6 @@ resource "null_resource" "sqs_notify" {
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<EOT
-      printf "\n...Waiting for consul vpn service before attempting SQS notify.\n\n"
-      until consul catalog services | grep -m 1 "vpn"; do sleep 10 ; done
-
       # This might need to run after ssh auth generation instead.
       ${path.module}/scripts/sqs_notify.sh "${local.resourcetier}" "${var.sqs_remote_in_vpn}" "${var.host1}" "${var.host2}"
 EOT
