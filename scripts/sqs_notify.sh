@@ -22,9 +22,9 @@ until consul catalog services | grep -m 1 "vpn"; do sleep 10 ; done
 
 echo ""
 echo "...Using SQS queue to notify remote clients of VPN credential endpoint.  SSH certs must be configured to use the endpoint."
+echo "host1: $host1"
+echo "host2: $host2"
 echo ""
-
-
 
 openvpn_admin_pw="$(vault kv get -field=value -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw)"
 token="$(vault token create -address="$VAULT_ADDR" -policy=vpn_read_config -policy=deadline_client -explicit-max-ttl=$ttl_mins -ttl=$ttl_mins -use-limit=4 -field=token)"
