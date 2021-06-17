@@ -11,10 +11,10 @@ readonly VAULT_ADDR=https://vault.service.consul:8200
 
 queue_msgs="$(aws sqs get-queue-attributes --queue-url $sqs_queue_url --attribute-names ApproximateNumberOfMessages | jq -r '.Attributes.ApproximateNumberOfMessages')"
 
-if [[ ! "$queue_msgs" -eq 0 ]];
-    aws sqs purge-queue --queue-url $sqs_queue_url
-    echo "...Waiting 60 seconds to purge queue of old data. ApproximateNumberOfMessages: $queue_msgs"
-    sleep 60
+if [[ ! "$queue_msgs" -eq 0 ]]; then
+  aws sqs purge-queue --queue-url $sqs_queue_url
+  echo "...Waiting 60 seconds to purge queue of old data. ApproximateNumberOfMessages: $queue_msgs"
+  sleep 60
 fi
 
 printf "\n...Waiting for consul vpn service before attempting SQS notify.\n\n"
@@ -31,10 +31,10 @@ token="$(vault token create -address="$VAULT_ADDR" -policy=vpn_read_config -poli
 
 file_content="$(cat <<EOF
 {
-    "openvpn_admin_pw" : $openvpn_admin_pw, 
-    "host1" : "$host1",
-    "host2" : "$host2",
-    "token" : "$token"
+  "openvpn_admin_pw" : $openvpn_admin_pw, 
+  "host1" : "$host1",
+  "host2" : "$host2",
+  "token" : "$token"
 }
 EOF
 )"
