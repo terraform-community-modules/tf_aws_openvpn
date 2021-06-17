@@ -2,6 +2,10 @@
 
 set -e
 
+aws sqs purge-queue --queue-url $sqs_queue_url
+echo "...Waiting 60 seconds to purge queue of old data."
+sleep 60
+
 printf "\n...Waiting for consul vpn service before attempting SQS notify.\n\n"
 until consul catalog services | grep -m 1 "vpn"; do sleep 10 ; done
 
@@ -30,7 +34,4 @@ file_content="$(cat <<EOF
 EOF
 )"
 
-aws sqs purge-queue --queue-url $sqs_queue_url
-echo "...Waiting 60 seconds to purge queue"
-sleep 60
 aws sqs send-message --queue-url $sqs_queue_url --message-body "$file_content" --message-group-id "$resourcetier"
