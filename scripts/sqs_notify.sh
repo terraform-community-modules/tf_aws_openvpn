@@ -29,7 +29,7 @@ echo ""
 openvpn_admin_pw="$(vault kv get -field=value -address="$VAULT_ADDR" -format=json $resourcetier/network/openvpn_admin_pw)"
 token="$(vault token create -address="$VAULT_ADDR" -policy=vpn_read_config -policy=deadline_client -explicit-max-ttl=$ttl_mins -ttl=$ttl_mins -use-limit=4 -field=token)"
 
-file_content="$(cat <<EOF
+message_content="$(cat <<EOF
 {
   "openvpn_admin_pw" : $openvpn_admin_pw, 
   "host1" : "$host1",
@@ -39,4 +39,4 @@ file_content="$(cat <<EOF
 EOF
 )"
 
-aws sqs send-message --queue-url $sqs_queue_url --message-body "$file_content" --message-group-id "$resourcetier"
+aws sqs send-message --queue-url $sqs_queue_url --message-body "$message_content" --message-group-id "$resourcetier"
