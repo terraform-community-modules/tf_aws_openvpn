@@ -147,7 +147,9 @@ EOT
 
 locals {
   private_ip = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].private_ip : null
-  public_ip  = var.use_eip ? length( aws_eip.openvpnip ) > 0 ? aws_eip.openvpnip[0].public_ip : null : length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].public_ip : null
+  _eip_public_ip = length( aws_eip.openvpnip ) > 0 ? aws_eip.openvpnip[0].public_ip : null
+  _instance_public_ip = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].public_ip : null
+  public_ip  = var.use_eip ? local._eip_public_ip : local._instance_public_ip
   id         = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].id : null
   vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
 }
