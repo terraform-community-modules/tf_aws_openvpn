@@ -1,15 +1,14 @@
+output "id" {
+  value      = local.id
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
+}
+
 output "private_ip" {
-  value = "${aws_instance.openvpn.private_ip}"
+  value      = local.private_ip
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 }
 
 output "public_ip" {
-  value = "${aws_instance.openvpn.public_ip}"
-}
-
-output "public_web_fqdn" {
-  value = "${aws_route53_record.openvpn-web.fqdn}"
-}
-
-output "public_fqdn" {
-  value = "${aws_route53_record.openvpn.fqdn}"
+  value      = local.public_ip
+  depends_on = [local.public_ip, aws_route53_record.openvpn_record]
 }
