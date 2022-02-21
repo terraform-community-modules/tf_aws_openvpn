@@ -155,7 +155,7 @@ locals {
   _instance_public_ip  = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].public_ip : null
   public_ip            = var.use_eip ? local._eip_public_ip : local._instance_public_ip
   id                   = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].id : null
-  network_interface_id = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].network_interface_id : null
+  network_interface_id = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].primary_network_interface_id : null
   vpn_address          = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
 }
 
