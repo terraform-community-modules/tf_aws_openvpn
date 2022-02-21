@@ -41,7 +41,7 @@ resource "aws_instance" "openvpn" {
     delete_on_termination = true
   }
 
-  tags = merge(tomap( {"Name" : var.name} ), var.common_tags, local.extra_tags)
+  tags = merge(tomap({ "Name" : var.name }), var.common_tags, local.extra_tags)
 
   # `admin_user` and `admin_pw` need to be passed in to the appliance through `user_data`, see docs -->
   # https://docs.openvpn.net/how-to-tutorialsguides/virtual-platforms/amazon-ec2-appliance-ami-quick-start-guide/
@@ -56,8 +56,8 @@ resource "aws_instance" "openvpn" {
 }
 
 locals {
-  resourcetier = var.resourcetier
-  client_cert_file_path = "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
+  resourcetier           = var.resourcetier
+  client_cert_file_path  = "/usr/local/openvpn_as/scripts/seperate/client.ovpn"
   client_cert_vault_path = "${local.resourcetier}/vpn/client_cert_files${local.client_cert_file_path}"
 }
 data "template_file" "user_data_auth_client" {
@@ -97,7 +97,7 @@ resource "aws_eip" "openvpnip" {
   instance   = aws_instance.openvpn[count.index].id
   depends_on = [aws_instance.openvpn]
 
-  tags = merge(tomap( {"Name" : var.name} ), var.common_tags, local.extra_tags)
+  tags = merge(tomap({ "Name" : var.name }), var.common_tags, local.extra_tags)
 
 }
 
@@ -146,12 +146,13 @@ EOT
 }
 
 locals {
-  private_ip = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].private_ip : null
-  _eip_public_ip = length( aws_eip.openvpnip ) > 0 ? aws_eip.openvpnip[0].public_ip : null
-  _instance_public_ip = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].public_ip : null
-  public_ip  = var.use_eip ? local._eip_public_ip : local._instance_public_ip
-  id         = length( aws_instance.openvpn ) > 0 ? aws_instance.openvpn[0].id : null
-  vpn_address = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
+  private_ip           = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].private_ip : null
+  _eip_public_ip       = length(aws_eip.openvpnip) > 0 ? aws_eip.openvpnip[0].public_ip : null
+  _instance_public_ip  = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].public_ip : null
+  public_ip            = var.use_eip ? local._eip_public_ip : local._instance_public_ip
+  id                   = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn[0].id : null
+  network_interface_id = length(aws_instance.openvpn) > 0 ? aws_instance.openvpn.network_interface_id : null
+  vpn_address          = var.route_public_domain_name ? "vpn.${var.public_domain_name}" : local.public_ip
 }
 
 resource "aws_route53_record" "openvpn_record" {
@@ -175,7 +176,7 @@ resource "aws_route" "private_openvpn_remote_subnet_gateway" {
 
   route_table_id         = element(var.private_route_table_ids, count.index)
   destination_cidr_block = var.onsite_private_subnet_cidr
-  instance_id            = local.id
+  network_interface_id   = local.network_interface_id
 
   timeouts {
     create = "5m"
@@ -188,7 +189,7 @@ resource "aws_route" "public_openvpn_remote_subnet_gateway" {
 
   route_table_id         = element(var.public_route_table_ids, count.index)
   destination_cidr_block = var.onsite_private_subnet_cidr
-  instance_id            = local.id
+  network_interface_id   = local.network_interface_id
 
   timeouts {
     create = "5m"
@@ -202,7 +203,7 @@ resource "aws_route" "private_openvpn_remote_subnet_vpndhcp_gateway" {
 
   route_table_id         = element(var.private_route_table_ids, count.index)
   destination_cidr_block = var.vpn_cidr
-  instance_id            = local.id
+  network_interface_id   = local.network_interface_id
 
   timeouts {
     create = "5m"
@@ -215,7 +216,7 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 
   route_table_id         = element(var.public_route_table_ids, count.index)
   destination_cidr_block = var.vpn_cidr
-  instance_id            = local.id
+  network_interface_id   = local.network_interface_id
 
   timeouts {
     create = "5m"
@@ -223,7 +224,7 @@ resource "aws_route" "public_openvpn_remote_subnet_vpndhcp_gateway" {
 }
 
 resource "null_resource" "sqs_notify" {
-  count      = var.create_vpn  ? 1 : 0
+  count = var.create_vpn ? 1 : 0
   triggers = {
     instance_id = aws_instance.openvpn[count.index].id
   }
